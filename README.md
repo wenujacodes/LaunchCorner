@@ -77,14 +77,6 @@ To generate the installer (`LaunchCorner.dmg`) locally:
 
 ---
 
-## Acknowledgements
-
-Special thanks to the amazing open-source projects that power LaunchCorner:
-- **[Sparkle Framework](https://sparkle-project.org)**: The open-source software update framework for macOS.
-- **[create-dmg](https://github.com/create-dmg/create-dmg)**: Modern macOS DMG installer disk image generator.
-
----
-
 ## License
 
 Distributed under the **MIT License**. Created by [@wenujacodes](https://github.com/wenujacodes).
