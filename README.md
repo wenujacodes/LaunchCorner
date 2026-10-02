@@ -1,7 +1,5 @@
 # LaunchCorner
 
-> A lightweight, modern hot-corner app launcher for macOS.
-
 [![macOS 14.0+](https://img.shields.io/badge/macOS-14.0%2B-blue.svg?style=flat&logo=apple)](https://www.apple.com/macos)
 [![Swift 5.0](https://img.shields.io/badge/Swift-5.0-orange.svg?style=flat&logo=swift)](https://developer.apple.com/swift/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
