@@ -1,10 +1,5 @@
 # LaunchCorner
 
-[![macOS 14.0+](https://img.shields.io/badge/macOS-14.0%2B-blue.svg?style=flat&logo=apple)](https://www.apple.com/macos)
-[![Swift 5.0](https://img.shields.io/badge/Swift-5.0-orange.svg?style=flat&logo=swift)](https://developer.apple.com/swift/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Apple Silicon](https://img.shields.io/badge/Architecture-Apple%20Silicon%20(arm64)-brightgreen.svg)]()
-
 **LaunchCorner** turns your screen corners into instant app shortcuts. Simply move your cursor to any screen corner to launch your favorite applications instantly. Built natively for macOS using SwiftUI.
 
 ---
