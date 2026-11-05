@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Update feed for LaunchCorner 1.1.2 and later (signed with the current Sparkle key).
+     appcast.xml is kept unchanged for 1.1.1, whose signing key was lost. -->
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>LaunchCorner Changelog</title>
+        <link>https://raw.githubusercontent.com/wenujacodes/LaunchCorner/main/appcast-v2.xml</link>
+        <description>Most recent updates for LaunchCorner</description>
+        <language>en</language>
+    </channel>
+</rss>

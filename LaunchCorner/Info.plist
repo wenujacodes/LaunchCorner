@@ -9,9 +9,9 @@
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleVersion</key>
-    <string>3</string>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.1</string>
+    <string>$(MARKETING_VERSION)</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>
@@ -21,8 +21,8 @@
     <key>NSHumanReadableCopyright</key>
     <string>Released under the MIT License.</string>
     <key>SUFeedURL</key>
-    <string>https://raw.githubusercontent.com/wenujacodes/LaunchCorner/main/appcast.xml</string>
+    <string>https://raw.githubusercontent.com/wenujacodes/LaunchCorner/main/appcast-v2.xml</string>
     <key>SUPublicEDKey</key>
-    <string>hAVQuxYqxeSviYywMbrjWCd4roJqK4RWfJ3pnpL9934=</string>
+    <string>pJ3lxA7SUz5vTGTunxBAooBiewVrOK+OtPJ7Ovt2EME=</string>
 </dict>
 </plist>

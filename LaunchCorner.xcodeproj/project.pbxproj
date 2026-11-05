@@ -14,13 +14,13 @@
 		B30000000000000000000001 /* ActionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000000 /* ActionExecutor.swift */; };
 		B40000000000000000000001 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000000 /* PermissionManager.swift */; };
 		B50000000000000000000001 /* ConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000000 /* ConfigStore.swift */; };
-		B51000000000000000000001 /* MenuBarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B51000000000000000000000 /* MenuBarManager.swift */; };
 		B52000000000000000000001 /* UpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52000000000000000000000 /* UpdateManager.swift */; };
 		B60000000000000000000001 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60000000000000000000000 /* MainView.swift */; };
 		B70000000000000000000001 /* ScreenCornerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70000000000000000000000 /* ScreenCornerView.swift */; };
 		B80000000000000000000001 /* CornerConfigSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80000000000000000000000 /* CornerConfigSheet.swift */; };
 		B90000000000000000000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000000 /* SettingsView.swift */; };
 		BA0000000000000000000001 /* PermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000000 /* PermissionView.swift */; };
+		1C0000000000000000000001 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 1C0000000000000000000000 /* AppIcon.icon */; };
 		BB0000000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB0000000000000000000000 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -32,13 +32,13 @@
 		B30000000000000000000000 /* ActionExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionExecutor.swift; sourceTree = "<group>"; };
 		B40000000000000000000000 /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
 		B50000000000000000000000 /* ConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigStore.swift; sourceTree = "<group>"; };
-		B51000000000000000000000 /* MenuBarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarManager.swift; sourceTree = "<group>"; };
 		B52000000000000000000000 /* UpdateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateManager.swift; sourceTree = "<group>"; };
 		B60000000000000000000000 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		B70000000000000000000000 /* ScreenCornerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCornerView.swift; sourceTree = "<group>"; };
 		B80000000000000000000000 /* CornerConfigSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerConfigSheet.swift; sourceTree = "<group>"; };
 		B90000000000000000000000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		BA0000000000000000000000 /* PermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionView.swift; sourceTree = "<group>"; };
+		1C0000000000000000000000 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		BB0000000000000000000000 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BC0000000000000000000000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BD0000000000000000000000 /* LaunchCorner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LaunchCorner.entitlements; sourceTree = "<group>"; };
@@ -71,6 +71,7 @@
 				44444444444444444444444M /* Models */,
 				44444444444444444444444S /* Services */,
 				44444444444444444444444V /* Views */,
+				1C0000000000000000000000 /* AppIcon.icon */,
 				BB0000000000000000000000 /* Assets.xcassets */,
 				BC0000000000000000000000 /* Info.plist */,
 				BD0000000000000000000000 /* LaunchCorner.entitlements */,
@@ -93,7 +94,6 @@
 				B30000000000000000000000 /* ActionExecutor.swift */,
 				B40000000000000000000000 /* PermissionManager.swift */,
 				B50000000000000000000000 /* ConfigStore.swift */,
-				B51000000000000000000000 /* MenuBarManager.swift */,
 				B52000000000000000000000 /* UpdateManager.swift */,
 			);
 			path = Services;
@@ -183,6 +183,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1C0000000000000000000001 /* AppIcon.icon in Resources */,
 				BB0000000000000000000001 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -200,7 +201,6 @@
 				B30000000000000000000001 /* ActionExecutor.swift in Sources */,
 				B40000000000000000000001 /* PermissionManager.swift in Sources */,
 				B50000000000000000000001 /* ConfigStore.swift in Sources */,
-				B51000000000000000000001 /* MenuBarManager.swift in Sources */,
 				B52000000000000000000001 /* UpdateManager.swift in Sources */,
 				B60000000000000000000001 /* MainView.swift in Sources */,
 				B70000000000000000000001 /* ScreenCornerView.swift in Sources */,
@@ -355,7 +355,8 @@
 				);
 				LOCALIZATION_PREFER_TEXT_SOURCE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1.1;
+				CURRENT_PROJECT_VERSION = 4;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.launchcorner.app;
 				PRODUCT_NAME = LaunchCorner;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -386,7 +387,8 @@
 				);
 				LOCALIZATION_PREFER_TEXT_SOURCE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1.1;
+				CURRENT_PROJECT_VERSION = 4;
+				MARKETING_VERSION = 1.1.2;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = com.launchcorner.app;
 				PRODUCT_NAME = LaunchCorner;

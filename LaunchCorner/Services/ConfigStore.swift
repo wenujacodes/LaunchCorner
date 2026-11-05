@@ -22,8 +22,12 @@ class ConfigStore: ObservableObject {
     }
     
     private let userDefaultsKey = "LaunchCornerAppConfig"
+    private let launchAtLoginDefaultKey = "LaunchCornerLaunchAtLoginDefaultApplied"
     
     init() {
+        let isFreshInstall = UserDefaults.standard.data(forKey: userDefaultsKey) == nil
+            && UserDefaults.standard.data(forKey: "NookAppConfig") == nil
+        
         if let data = UserDefaults.standard.data(forKey: userDefaultsKey),
            let decoded = try? JSONDecoder().decode(AppConfig.self, from: data) {
             self.config = decoded
@@ -32,6 +36,14 @@ class ConfigStore: ObservableObject {
             self.config = decoded
         } else {
             self.config = .default
+        }
+        
+        // Launch at Login is on by default for new installs. Applied once, so turning it off sticks.
+        if !UserDefaults.standard.bool(forKey: launchAtLoginDefaultKey) {
+            UserDefaults.standard.set(true, forKey: launchAtLoginDefaultKey)
+            if isFreshInstall {
+                setLaunchAtLogin(true)
+            }
         }
         
         self.isLaunchAtLoginEnabled = checkLaunchAtLogin()

@@ -87,7 +87,6 @@ struct AppConfig: Codable, Equatable {
     var hitZoneSize: Double
     var isActive: Bool
     var monitorMode: MonitorMode
-    var showInMenuBar: Bool
     var autoCheckUpdates: Bool
     
     static var `default`: AppConfig {
@@ -98,23 +97,21 @@ struct AppConfig: Codable, Equatable {
             hitZoneSize: 15.0,
             isActive: true,
             monitorMode: .allScreens,
-            showInMenuBar: true,
             autoCheckUpdates: true
         )
     }
     
     enum CodingKeys: String, CodingKey {
-        case screenConfigs, defaultConfig, dwellTime, hitZoneSize, isActive, monitorMode, showInMenuBar, autoCheckUpdates
+        case screenConfigs, defaultConfig, dwellTime, hitZoneSize, isActive, monitorMode, autoCheckUpdates
     }
     
-    init(screenConfigs: [String: ScreenCornerConfig], defaultConfig: ScreenCornerConfig, dwellTime: Double, hitZoneSize: Double, isActive: Bool, monitorMode: MonitorMode, showInMenuBar: Bool = true, autoCheckUpdates: Bool = true) {
+    init(screenConfigs: [String: ScreenCornerConfig], defaultConfig: ScreenCornerConfig, dwellTime: Double, hitZoneSize: Double, isActive: Bool, monitorMode: MonitorMode, autoCheckUpdates: Bool = true) {
         self.screenConfigs = screenConfigs
         self.defaultConfig = defaultConfig
         self.dwellTime = dwellTime
         self.hitZoneSize = hitZoneSize
         self.isActive = isActive
         self.monitorMode = monitorMode
-        self.showInMenuBar = showInMenuBar
         self.autoCheckUpdates = autoCheckUpdates
     }
     
@@ -126,7 +123,6 @@ struct AppConfig: Codable, Equatable {
         hitZoneSize = try container.decodeIfPresent(Double.self, forKey: .hitZoneSize) ?? 15.0
         isActive = try container.decodeIfPresent(Bool.self, forKey: .isActive) ?? true
         monitorMode = try container.decodeIfPresent(MonitorMode.self, forKey: .monitorMode) ?? .allScreens
-        showInMenuBar = try container.decodeIfPresent(Bool.self, forKey: .showInMenuBar) ?? true
         autoCheckUpdates = try container.decodeIfPresent(Bool.self, forKey: .autoCheckUpdates) ?? true
     }
 }

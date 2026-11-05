@@ -10,16 +10,6 @@ struct SettingsView: View {
     
     @State private var showingResetAlert = false
     
-    private var showInMenuBarBinding: Binding<Bool> {
-        Binding(
-            get: { configStore.config.showInMenuBar },
-            set: { newValue in
-                configStore.config.showInMenuBar = newValue
-                configStore.save()
-            }
-        )
-    }
-    
     private var enableLaunchCornerBinding: Binding<Bool> {
         Binding(
             get: { configStore.config.isActive },
@@ -74,18 +64,6 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
                         
                         VStack(spacing: 12) {
-                            HStack {
-                                Text("Show in Menu Bar")
-                                    .font(.body)
-                                Spacer()
-                                Toggle("", isOn: showInMenuBarBinding)
-                                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                                    .controlSize(.small)
-                                    .labelsHidden()
-                            }
-                            
-                            Divider()
-                            
                             HStack {
                                 Text("Enable LaunchCorner")
                                     .font(.body)
@@ -188,9 +166,9 @@ struct SettingsView: View {
                         )
                     }
                     
-                    // Danger Zone
+                    // App
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Danger Zone")
+                        Text("App")
                             .font(.subheadline)
                             .fontWeight(.medium)
                             .foregroundColor(.secondary)
@@ -240,7 +218,7 @@ struct SettingsView: View {
                                 Text("Version")
                                     .font(.body)
                                 Spacer()
-                                Text("1.1.1")
+                                Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
                                     .font(.body)
                                     .foregroundColor(.secondary)
                             }
@@ -273,7 +251,7 @@ struct SettingsView: View {
                             
                             Divider()
                             
-                            Link(destination: URL(string: "https://x.com/wenujacodes")!) {
+                            Link(destination: URL(string: "https://x.com/wenujatweets")!) {
                                 HStack {
                                     Text("X (Twitter)")
                                         .font(.body)

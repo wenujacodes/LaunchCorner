@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import ServiceManagement
 
 @MainActor
 class AppState: ObservableObject {
@@ -11,14 +12,53 @@ class AppState: ObservableObject {
     lazy var engine: CornerDetectionEngine = {
         CornerDetectionEngine(configStore: configStore)
     }()
-    lazy var menuBarManager: MenuBarManager = {
-        MenuBarManager(configStore: configStore)
-    }()
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var appState: AppState?
     var openWindowHandler: (() -> Void)?
+    
+    /// Set when macOS opened the app at login. Used once, for the first window appearance.
+    var shouldStartHidden = false
+
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        if wasLaunchedAtLogin() {
+            shouldStartHidden = true
+            // No Dock icon while starting in the background
+            NSApp.setActivationPolicy(.accessory)
+        }
+    }
+
+    /// True when macOS started the app at login, false when the user opened it.
+    private func wasLaunchedAtLogin() -> Bool {
+        // 1. The launch event is marked as a login-item launch
+        if let event = NSAppleEventManager.shared().currentAppleEvent,
+           event.paramDescriptor(forKeyword: AEKeyword(keyAEPropData))?.enumCodeValue == OSType(keyAELaunchedAsLogInItem) {
+            return true
+        }
+
+        // 2. Fallback: Launch at Login is on and the user logged in moments ago
+        guard SMAppService.mainApp.status == .enabled,
+              let loginDate = consoleLoginDate() else { return false }
+        return Date().timeIntervalSince(loginDate) < 120
+    }
+
+    /// When the current user logged in to this Mac's screen (from the system login records).
+    private func consoleLoginDate() -> Date? {
+        let userName = NSUserName()
+        var latest: Date?
+        setutxent()
+        defer { endutxent() }
+        while let entry = getutxent() {
+            guard entry.pointee.ut_type == USER_PROCESS else { continue }
+            let user = withUnsafeBytes(of: entry.pointee.ut_user) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
+            let line = withUnsafeBytes(of: entry.pointee.ut_line) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
+            guard user == userName, line == "console" else { continue }
+            let date = Date(timeIntervalSince1970: TimeInterval(entry.pointee.ut_tv.tv_sec))
+            if latest == nil || date > latest! { latest = date }
+        }
+        return latest
+    }
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         NotificationCenter.default.addObserver(
@@ -47,7 +87,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 }
                 
                 if !hasVisibleMainWindow {
-                    // Hide from Dock (.accessory) and keep running in background (with or without Menu Bar item)
+                    // Hide from Dock (.accessory) and keep running in background
                     NSApp.setActivationPolicy(.accessory)
                 }
             }
@@ -57,6 +97,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         showMainWindow()
         return true
+    }
+    
+    /// Hides the main window without closing it, so reopening the app shows it again.
+    func hideMainWindowForBackgroundLaunch() {
+        for window in NSApp.windows where !window.isSheet && window.sheetParent == nil && window.level == .normal {
+            window.orderOut(nil)
+        }
+        NSApp.setActivationPolicy(.accessory)
     }
     
     func showMainWindow() {
@@ -126,20 +174,21 @@ struct LaunchCornerApp: App {
                 .environmentObject(appState.updateManager)
                 .onAppear {
                     appDelegate.appState = appState
-                    appDelegate.showMainWindow()
-                    _ = appState.menuBarManager
                     
-                    let delegate = appDelegate
-                    appState.menuBarManager.onOpenSettings = { [weak delegate] in
-                        delegate?.showMainWindow()
+                    // Start in the background only if setup is done; otherwise show onboarding.
+                    let startHidden = appDelegate.shouldStartHidden && appState.permissionManager.isAccessibilityGranted
+                    appDelegate.shouldStartHidden = false
+                    if !startHidden {
+                        appDelegate.showMainWindow()
                     }
-                    
-                    let updateManager = appState.updateManager
-                    appState.menuBarManager.onCheckForUpdates = { [weak updateManager] in
-                        updateManager?.checkForUpdates()
-                    }
-                    
                     appState.permissionManager.startMonitoringPermission()
+                    
+                    if startHidden {
+                        // Defer so the window's views finish their own setup first
+                        DispatchQueue.main.async {
+                            appDelegate.hideMainWindowForBackgroundLaunch()
+                        }
+                    }
                 }
         }
         .windowResizability(.contentSize)

@@ -36,7 +36,7 @@ LaunchCorner was created as a free, open-source utility so that anyone can trigg
 - **Apple Silicon (arm64)**: Native architecture for **M1/M2/M3/M4** Macs.
 - **Dwell Time & Sensitivity**: Fine-tune trigger response down to **0 ms (Instant)**.
 - **Multi-Monitor Support**: Works seamlessly across multiple connected displays.
-- **Menu Bar & Dock Modes**: Runs quietly in the macOS Menu Bar and automatically hides from the Dock when closed.
+- **Runs in the Background**: Starts silently at login and hides from the Dock when closed. Open the app anytime to show its window.
 - **Open Source**: 100% free and open-source under the MIT license.
 
 ---
