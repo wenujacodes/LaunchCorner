@@ -79,7 +79,7 @@ struct PermissionView: View {
                     .background {
                         if glassEnabled {
                             if #available(macOS 26, *) {
-                                Capsule().glassEffect(.regular, in: .capsule)
+                                Capsule().glassEffect(.regular.tint(.accentColor), in: .capsule)
                             }
                         } else {
                             RoundedRectangle(cornerRadius: 8)
