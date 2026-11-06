@@ -20,6 +20,7 @@
 		B80000000000000000000001 /* CornerConfigSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80000000000000000000000 /* CornerConfigSheet.swift */; };
 		B90000000000000000000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000000 /* SettingsView.swift */; };
 		BA0000000000000000000001 /* PermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000000 /* PermissionView.swift */; };
+		C10000000000000000000001 /* GlassSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000000 /* GlassSupport.swift */; };
 		1C0000000000000000000001 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 1C0000000000000000000000 /* AppIcon.icon */; };
 		BB0000000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB0000000000000000000000 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -38,6 +39,7 @@
 		B80000000000000000000000 /* CornerConfigSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerConfigSheet.swift; sourceTree = "<group>"; };
 		B90000000000000000000000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		BA0000000000000000000000 /* PermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionView.swift; sourceTree = "<group>"; };
+		C10000000000000000000000 /* GlassSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassSupport.swift; sourceTree = "<group>"; };
 		1C0000000000000000000000 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		BB0000000000000000000000 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BC0000000000000000000000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -107,6 +109,7 @@
 				B80000000000000000000000 /* CornerConfigSheet.swift */,
 				B90000000000000000000000 /* SettingsView.swift */,
 				BA0000000000000000000000 /* PermissionView.swift */,
+				C10000000000000000000000 /* GlassSupport.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -207,6 +210,7 @@
 				B80000000000000000000001 /* CornerConfigSheet.swift in Sources */,
 				B90000000000000000000001 /* SettingsView.swift in Sources */,
 				BA0000000000000000000001 /* PermissionView.swift in Sources */,
+				C10000000000000000000001 /* GlassSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

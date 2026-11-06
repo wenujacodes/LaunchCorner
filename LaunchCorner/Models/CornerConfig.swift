@@ -88,6 +88,8 @@ struct AppConfig: Codable, Equatable {
     var isActive: Bool
     var monitorMode: MonitorMode
     var autoCheckUpdates: Bool
+    /// Liquid Glass on macOS 26+. Ignored on older systems (legacy look kept).
+    var useLiquidGlass: Bool
     
     static var `default`: AppConfig {
         AppConfig(
@@ -102,10 +104,10 @@ struct AppConfig: Codable, Equatable {
     }
     
     enum CodingKeys: String, CodingKey {
-        case screenConfigs, defaultConfig, dwellTime, hitZoneSize, isActive, monitorMode, autoCheckUpdates
+        case screenConfigs, defaultConfig, dwellTime, hitZoneSize, isActive, monitorMode, autoCheckUpdates, useLiquidGlass
     }
     
-    init(screenConfigs: [String: ScreenCornerConfig], defaultConfig: ScreenCornerConfig, dwellTime: Double, hitZoneSize: Double, isActive: Bool, monitorMode: MonitorMode, autoCheckUpdates: Bool = true) {
+    init(screenConfigs: [String: ScreenCornerConfig], defaultConfig: ScreenCornerConfig, dwellTime: Double, hitZoneSize: Double, isActive: Bool, monitorMode: MonitorMode, autoCheckUpdates: Bool = true, useLiquidGlass: Bool = true) {
         self.screenConfigs = screenConfigs
         self.defaultConfig = defaultConfig
         self.dwellTime = dwellTime
@@ -113,6 +115,7 @@ struct AppConfig: Codable, Equatable {
         self.isActive = isActive
         self.monitorMode = monitorMode
         self.autoCheckUpdates = autoCheckUpdates
+        self.useLiquidGlass = useLiquidGlass
     }
     
     init(from decoder: Decoder) throws {
@@ -124,5 +127,6 @@ struct AppConfig: Codable, Equatable {
         isActive = try container.decodeIfPresent(Bool.self, forKey: .isActive) ?? true
         monitorMode = try container.decodeIfPresent(MonitorMode.self, forKey: .monitorMode) ?? .allScreens
         autoCheckUpdates = try container.decodeIfPresent(Bool.self, forKey: .autoCheckUpdates) ?? true
+        useLiquidGlass = try container.decodeIfPresent(Bool.self, forKey: .useLiquidGlass) ?? true
     }
 }

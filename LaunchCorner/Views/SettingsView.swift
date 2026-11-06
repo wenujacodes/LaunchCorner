@@ -10,6 +10,8 @@ struct SettingsView: View {
     
     @State private var showingResetAlert = false
     
+    private var glassEnabled: Bool { GlassSupport.isEnabled(configStore.config) }
+    
     private var enableLaunchCornerBinding: Binding<Bool> {
         Binding(
             get: { configStore.config.isActive },
@@ -35,6 +37,16 @@ struct SettingsView: View {
             get: { configStore.config.dwellTime },
             set: { newValue in
                 configStore.config.dwellTime = newValue
+                configStore.save()
+            }
+        )
+    }
+    
+    private var liquidGlassBinding: Binding<Bool> {
+        Binding(
+            get: { configStore.config.useLiquidGlass },
+            set: { newValue in
+                configStore.config.useLiquidGlass = newValue
                 configStore.save()
             }
         )
@@ -87,12 +99,35 @@ struct SettingsView: View {
                             }
                         }
                         .padding(14)
-                        .background(colorScheme == .dark ? Color.white.opacity(0.04) : Color.white)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 1)
-                        )
+                        .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
+                    }
+                    
+                    // Appearance (Liquid Glass needs macOS 26+)
+                    if GlassSupport.isAvailable {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Appearance")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                            
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Liquid Glass")
+                                        .font(.body)
+                                    Text("Translucent glass interface")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                Toggle("", isOn: liquidGlassBinding)
+                                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                                    .controlSize(.small)
+                                    .labelsHidden()
+                                    .help("Use the Liquid Glass look. Turn off to keep the classic appearance.")
+                            }
+                            .padding(14)
+                            .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
+                        }
                     }
                     
                     // Sensitivity
@@ -119,12 +154,7 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                         }
                         .padding(14)
-                        .background(colorScheme == .dark ? Color.white.opacity(0.04) : Color.white)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 1)
-                        )
+                        .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
                     }
                     
                     // Updates
@@ -155,15 +185,12 @@ struct SettingsView: View {
                                     updateManager.checkForUpdates()
                                 }
                                 .buttonStyle(.bordered)
+                                .adaptiveGlassButton(glass: glassEnabled)
+                                .help("Check for software updates now")
                             }
                         }
                         .padding(14)
-                        .background(colorScheme == .dark ? Color.white.opacity(0.04) : Color.white)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 1)
-                        )
+                        .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
                     }
                     
                     // App
@@ -182,6 +209,8 @@ struct SettingsView: View {
                                     NSApp.terminate(nil)
                                 }
                                 .buttonStyle(.bordered)
+                                .adaptiveGlassButton(glass: glassEnabled)
+                                .help("Quit LaunchCorner")
                             }
                             
                             Divider()
@@ -195,15 +224,12 @@ struct SettingsView: View {
                                 }
                                 .foregroundColor(.red)
                                 .buttonStyle(.bordered)
+                                .adaptiveGlassButton(glass: glassEnabled)
+                                .help("Reset all corner assignments and preferences")
                             }
                         }
                         .padding(14)
-                        .background(colorScheme == .dark ? Color.white.opacity(0.04) : Color.white)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 1)
-                        )
+                        .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
                     }
                     
                     // About
@@ -263,12 +289,7 @@ struct SettingsView: View {
                             }
                         }
                         .padding(14)
-                        .background(colorScheme == .dark ? Color.white.opacity(0.04) : Color.white)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 1)
-                        )
+                        .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
                     }
                 }
                 .padding(.horizontal, 28)
@@ -276,7 +297,7 @@ struct SettingsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(colorScheme == .dark ? Color(red: 0x24/255.0, green: 0x23/255.0, blue: 0x21/255.0) : Color(red: 0xF5/255.0, green: 0xF5/255.0, blue: 0xF7/255.0))
+        .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
         .alert("Reset All Configurations?", isPresented: $showingResetAlert) {
             Button("Cancel", role: .cancel) {}
             Button("Reset Everything", role: .destructive) {

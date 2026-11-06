@@ -3,6 +3,9 @@ import SwiftUI
 struct PermissionView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var permissionManager: PermissionManager
+    @EnvironmentObject var configStore: ConfigStore
+    
+    private var glassEnabled: Bool { GlassSupport.isEnabled(configStore.config) }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -13,8 +16,10 @@ struct PermissionView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 48, height: 48)
+                .symbolRenderingMode(.hierarchical)
                 .foregroundColor(.accentColor)
                 .padding(.bottom, 20)
+                .accessibilityHidden(true)
             
             // Title
             Text("Welcome to LaunchCorner")
@@ -71,10 +76,16 @@ struct PermissionView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 28)
                     .padding(.vertical, 10)
-                    .background(Color.accentColor)
-                    .cornerRadius(8)
+                    .background {
+                        if !glassEnabled {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.accentColor)
+                        }
+                    }
             }
             .buttonStyle(.plain)
+            .tint(.accentColor)
+            .adaptiveGlassButton(glass: glassEnabled, prominent: true)
             .padding(.bottom, 6)
             
             // Helper text
@@ -86,7 +97,7 @@ struct PermissionView: View {
                 .frame(height: 30)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(colorScheme == .dark ? Color(red: 0x24/255.0, green: 0x23/255.0, blue: 0x21/255.0) : Color(red: 0xF5/255.0, green: 0xF5/255.0, blue: 0xF7/255.0))
+        .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
         .onAppear {
             permissionManager.startMonitoringPermission()
         }
@@ -96,8 +107,10 @@ struct PermissionView: View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: icon)
                 .font(.system(size: 15, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
                 .foregroundColor(.accentColor)
                 .frame(width: 28, height: 28)
+                .accessibilityHidden(true)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)

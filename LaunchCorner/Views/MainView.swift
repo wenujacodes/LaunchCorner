@@ -8,6 +8,8 @@ struct MainView: View {
     
     @State private var showingSettings = false
     
+    private var glassEnabled: Bool { GlassSupport.isEnabled(configStore.config) }
+    
     var body: some View {
         VStack(spacing: 0) {
             // Hidden button to catch Cmd+, shortcut
@@ -40,10 +42,13 @@ struct MainView: View {
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
-                            .background(.ultraThinMaterial)
+                            .legacyPillBackground(glass: glassEnabled, shape: Capsule())
                             .clipShape(Capsule())
                         }
                         .buttonStyle(.plain)
+                        .adaptiveGlassButton(glass: glassEnabled)
+                        .accessibilityLabel("Back to corner setup")
+                        .help("Back to corner setup")
                     } else {
                         Button(action: {
                             withAnimation(.easeInOut(duration: 0.25)) {
@@ -52,12 +57,16 @@ struct MainView: View {
                         }) {
                             Image(systemName: "gearshape.fill")
                                 .font(.system(size: 13, weight: .medium))
+                                .symbolRenderingMode(.hierarchical)
                                 .foregroundColor(.secondary)
                                 .frame(width: 30, height: 30)
-                                .background(.ultraThinMaterial)
+                                .legacyPillBackground(glass: glassEnabled, shape: Circle())
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
+                        .adaptiveGlassButton(glass: glassEnabled)
+                        .accessibilityLabel("Open Settings")
+                        .help("Open Settings (⌘,)")
                     }
                 }
                 .padding(.horizontal, 16)
@@ -91,7 +100,7 @@ struct MainView: View {
             .animation(.spring(response: 0.5, dampingFraction: 0.8), value: permissionManager.isAccessibilityGranted)
         }
         .frame(width: 660, height: 540)
-        .background(colorScheme == .dark ? Color(red: 0x24/255.0, green: 0x23/255.0, blue: 0x21/255.0) : Color(red: 0xF5/255.0, green: 0xF5/255.0, blue: 0xF7/255.0))
+        .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
         .onAppear {
             if permissionManager.isAccessibilityGranted && configStore.config.isActive {
                 engine.start()

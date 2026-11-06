@@ -13,6 +13,8 @@ struct CornerConfigSheet: View {
     @State private var selectedAppName: String = ""
     @State private var selectedAppIcon: NSImage? = nil
     
+    private var glassEnabled: Bool { GlassSupport.isEnabled(configStore.config) }
+    
     init(corner: Corner, screenID: String? = nil) {
         self.corner = corner
         self.screenID = screenID
@@ -24,7 +26,9 @@ struct CornerConfigSheet: View {
             HStack(spacing: 12) {
                 Image(systemName: corner.symbolName)
                     .font(.title)
+                    .symbolRenderingMode(.hierarchical)
                     .foregroundColor(.accentColor)
+                    .accessibilityHidden(true)
                 Text("\(corner.displayName) Configuration")
                     .font(.title2)
                     .fontWeight(.semibold)
@@ -60,29 +64,20 @@ struct CornerConfigSheet: View {
                         Spacer()
                     }
                     .padding()
-                    .background(colorScheme == .dark ? Color.white.opacity(0.06) : Color.white)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.08), lineWidth: 1)
-                    )
+                    .cardChrome(glass: glassEnabled, colorScheme: colorScheme, darkFill: 0.06, darkStroke: 0.1)
                 } else {
                     VStack(spacing: 10) {
                         Image(systemName: "square.grid.2x2")
                             .font(.system(size: 28))
                             .foregroundColor(.secondary)
+                            .accessibilityHidden(true)
                         Text("No application selected")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 20)
-                    .background(colorScheme == .dark ? Color.white.opacity(0.04) : Color.white)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 1)
-                    )
+                    .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
                 }
                 
                 Button(action: selectApp) {
@@ -91,11 +86,18 @@ struct CornerConfigSheet: View {
                         .fontWeight(.medium)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 8)
-                        .background(Color.accentColor.opacity(0.15))
                         .foregroundColor(.accentColor)
-                        .cornerRadius(8)
+                        .background {
+                            if !glassEnabled {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.accentColor.opacity(0.15))
+                            }
+                        }
                 }
                 .buttonStyle(.plain)
+                .tint(.accentColor)
+                .adaptiveGlassButton(glass: glassEnabled)
+                .help("Pick the application launched by the \(corner.displayName) corner")
             }
             
             Spacer()
@@ -123,11 +125,12 @@ struct CornerConfigSheet: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
+                .adaptiveGlassButton(glass: glassEnabled, prominent: true)
             }
         }
         .padding(28)
         .frame(width: 440, height: 320)
-        .background(colorScheme == .dark ? Color(red: 0x24/255.0, green: 0x23/255.0, blue: 0x21/255.0) : Color(red: 0xF5/255.0, green: 0xF5/255.0, blue: 0xF7/255.0))
+        .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
         .onAppear {
             loadCurrentConfig()
         }
