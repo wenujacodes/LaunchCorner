@@ -309,12 +309,16 @@ struct SettingsView: View {
                 .padding(.bottom, 24)
             }
             .coordinateSpace(name: "settingsScroll")
+            .modifier(SettingsCollapseDriver(collapsed: $settingsHeaderCollapsed))
             .onPreferenceChange(SettingsScrollOffsetKey.self) { minY in
-                settingsHeaderCollapsed = minY < -20
+                // Fallback for macOS 14; macOS 15+ is driven by SettingsCollapseDriver.
+                let collapsed = minY < -12
+                if collapsed != settingsHeaderCollapsed {
+                    settingsHeaderCollapsed = collapsed
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
         .alert("Reset All Configurations?", isPresented: $showingResetAlert) {
             Button("Cancel", role: .cancel) {}
             Button("Reset Everything", role: .destructive) {
@@ -332,5 +336,26 @@ private struct SettingsScrollOffsetKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = nextValue()
+    }
+}
+
+/// Collapses the Settings title once scrolled, using the native scroll
+/// geometry driver (macOS 15+). Discrete toggles only; the header animates them.
+private struct SettingsCollapseDriver: ViewModifier {
+    @Binding var collapsed: Bool
+
+    func body(content: Content) -> some View {
+        if #available(macOS 15, *) {
+            content.onScrollGeometryChange(for: CGFloat.self, of: {
+                $0.contentOffset.y + $0.contentInsets.top
+            }) { _, offsetY in
+                let shouldCollapse = offsetY > 12
+                if shouldCollapse != collapsed {
+                    collapsed = shouldCollapse
+                }
+            }
+        } else {
+            content
+        }
     }
 }

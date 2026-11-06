@@ -99,7 +99,6 @@ struct PermissionView: View {
                 .frame(height: 30)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
         .onAppear {
             permissionManager.startMonitoringPermission()
         }
