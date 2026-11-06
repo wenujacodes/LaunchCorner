@@ -137,9 +137,6 @@ struct CornerButton: View {
     }
     
     private var plusIdleColor: Color {
-        if GlassSupport.isEnabled(configStore.config) {
-            return .secondary.opacity(0.7)
-        }
-        return colorScheme == .dark ? .white.opacity(0.5) : .black.opacity(0.5)
+        colorScheme == .dark ? .white : .black
     }
 }
