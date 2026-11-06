@@ -36,6 +36,14 @@ enum SystemActionExecutor {
     private static var shotCounter: UInt = 0
 
     static func screenshot(kind: ScreenshotKind, destination: ScreenshotDestination, directory: String) {
+        // Screen Recording TCC gates the CALLING app: preflight first so the
+        // system prompts instead of failing silently. Without a grant the
+        // capture comes out blank — skip loudly and tell the user where to enable it.
+        guard CGPreflightScreenCaptureAccess() else {
+            CGRequestScreenCaptureAccess()
+            print("Screenshot: needs Screen Recording access (System Settings > Privacy & Security > Screen Recording). Capture skipped.")
+            return
+        }
         var args: [String] = []
         switch kind {
         case .full:
@@ -43,7 +51,8 @@ enum SystemActionExecutor {
         case .selection:
             args.append("-i")
         case .window:
-            args += ["-iw"]
+            // Front window directly; -iw would wait for a manual click instead.
+            args.append("-w")
         }
         switch destination {
         case .clipboard:

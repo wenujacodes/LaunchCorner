@@ -72,6 +72,12 @@ struct CornerConfigSheet: View {
     // Set only by the Clear button: clearing to "nothing" is always a valid,
     // deliberate save even though the resulting draft is .none.
     @State private var clearArmed = false
+    // First-time setup gate: the user must set this corner to — in macOS
+    // Hot Corners before configuring it here (prevents double triggers).
+    @State private var hotCornerAck = false
+
+    /// Direct link to System Settings → Desktop & Dock → Hot Corners.
+    private static let hotCornersURL = URL(string: "x-apple.systempreferences:com.apple.Desktop-Settings.extension?HotCorners")!
 
     private var glassEnabled: Bool { GlassSupport.isEnabled(configStore.config) }
 
@@ -95,6 +101,43 @@ struct CornerConfigSheet: View {
                 Spacer()
             }
             .padding(.bottom, 12)
+
+            // First-time gate: avoid double triggers with the system hot corner.
+            if requiresHotCornerAck {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                            .accessibilityHidden(true)
+                        Text("Set this corner to — in macOS Hot Corners first")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                    }
+                    Text("System Settings → Desktop & Dock → Hot Corners… — otherwise both actions fire at once.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    HStack {
+                        Button("Open Hot Corners…") {
+                            NSWorkspace.shared.open(Self.hotCornersURL)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.accentColor)
+                        Spacer()
+                        Toggle("This corner is set to —", isOn: $hotCornerAck)
+                            .toggleStyle(.checkbox)
+                    }
+                }
+                .padding(12)
+                .background {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.orange.opacity(colorScheme == .dark ? 0.22 : 0.12))
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.orange.opacity(0.45), lineWidth: 1)
+                }
+                .padding(.bottom, 12)
+            }
 
             // Summary preview: what Save will persist
             summaryBlock
@@ -266,6 +309,8 @@ struct CornerConfigSheet: View {
                     Text(category.title)
                         .font(.caption)
                         .fontWeight(selectedCategory == category ? .semibold : .medium)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 7)
@@ -642,6 +687,9 @@ struct CornerConfigSheet: View {
                             }
                         }
                         .pickerStyle(.segmented)
+                        Text("Requires Screen Recording access (asked on first capture).")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                     if screenshotDestination == .file {
                         VStack(alignment: .leading, spacing: 4) {
@@ -712,7 +760,14 @@ struct CornerConfigSheet: View {
             || draftAction != initialAction
     }
 
+    /// First-time corners must acknowledge the macOS Hot Corners check.
+    private var requiresHotCornerAck: Bool { initialAction == .none }
+
     private var isDraftValid: Bool {
+        // First-time setup: the macOS corner must be set to — first.
+        if requiresHotCornerAck && !hotCornerAck {
+            return false
+        }
         switch selectedCategory {
         case .app:
             // Empty app is only valid as an explicit clear (Clear button);

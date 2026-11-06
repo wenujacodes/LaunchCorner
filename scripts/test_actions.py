@@ -237,12 +237,13 @@ def main():
     ok = png is not None and os.path.getsize(os.path.join(shotdir, png)) > 0
     # "could not create image from display" = headless test session, not app code
     # (real login sessions capture fine, subject to Screen Recording TCC).
-    headless = "could not create image from display" in shout
+    # "needs Screen Recording access" = session lacks the TCC grant (also env).
+    headless = "could not create image from display" in shout or "needs Screen Recording access" in shout
     check("SYSTEM", "shot-file", True if ok else (None if headless else False),
-          png or ("SKIP: no display in test session" if headless else "no file produced"))
+          png or ("SKIP: no Screen Recording grant in test session" if headless else "no file produced"))
     rc, out = harness("shotclip", timeout=30)
-    if "could not create image from display" in out:
-        check("SYSTEM", "shot-clipboard", None, "SKIP: no display in test session")
+    if "could not create image from display" in out or "needs Screen Recording access" in out:
+        check("SYSTEM", "shot-clipboard", None, "SKIP: no Screen Recording grant in test session")
     else:
         check("SYSTEM", "shot-clipboard", "CLIPIMAGE YES" in out, out.strip()[:120])
 
