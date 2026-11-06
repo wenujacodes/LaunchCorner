@@ -146,7 +146,6 @@ struct CornerConfigSheet: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
-                .adaptiveGlassButton(glass: glassEnabled, prominent: true)
                 .disabled(!isDraftValid || !isDirty)
                 .frame(minWidth: 72)
             }
@@ -243,23 +242,15 @@ struct CornerConfigSheet: View {
 
     // MARK: - Category selector
 
-    @ViewBuilder
     private var categorySelector: some View {
-        if glassEnabled {
-            segmentRow
-                .padding(3)
-                .cardChrome(glass: true, colorScheme: colorScheme)
-        } else {
-            segmentRow
-        }
+        segmentRow
     }
 
     private var segmentRow: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 8) {
             ForEach(ConfigCategory.allCases) { category in
-                // Explicit tap target (not Button): the whole segment rect must
-                // respond, including unselected segments with no background.
-                VStack(spacing: 3) {
+                // Explicit tap target (not Button): the whole segment rect must respond.
+                VStack(spacing: 4) {
                     Image(systemName: category.symbolName)
                         .font(.system(size: 16))
                         .accessibilityHidden(true)
@@ -270,19 +261,11 @@ struct CornerConfigSheet: View {
                         .minimumScaleFactor(0.85)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 7)
-                .padding(.horizontal, 2)
-                .foregroundColor(segmentForeground(for: category))
+                .padding(.vertical, 8)
+                .foregroundColor(selectedCategory == category ? .accentColor : .primary)
                 .background {
-                    if glassEnabled {
-                        if #available(macOS 26, *), selectedCategory == category {
-                            RoundedRectangle(cornerRadius: 9)
-                                .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.30 : 0.16))
-                        }
-                    } else {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(selectedOptionFill(selected: selectedCategory == category, colorScheme: colorScheme))
-                    }
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(selectedOptionFill(selected: selectedCategory == category, colorScheme: colorScheme))
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { selectedCategory = category }
@@ -293,14 +276,6 @@ struct CornerConfigSheet: View {
                 .help(category.title)
             }
         }
-    }
-
-    private func segmentForeground(for category: ConfigCategory) -> Color {
-        guard selectedCategory == category else {
-            // Unselected recedes on glass; legacy keeps full primary.
-            return glassEnabled ? .secondary : .primary
-        }
-        return .accentColor
     }
 
     // MARK: - Detail area
@@ -422,7 +397,6 @@ struct CornerConfigSheet: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.accentColor)
-                    .adaptiveGlassButton(glass: glassEnabled)
                     if !linkOpenWithName.isEmpty {
                         Button("Clear") {
                             linkOpenWithBundleID = nil
@@ -430,7 +404,6 @@ struct CornerConfigSheet: View {
                         }
                         .buttonStyle(.plain)
                         .foregroundColor(.red)
-                        .adaptiveGlassButton(glass: glassEnabled)
                     }
                 }
                 .padding(10)
@@ -470,7 +443,6 @@ struct CornerConfigSheet: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.accentColor)
-                    .adaptiveGlassButton(glass: glassEnabled)
                 }
                 Text("Runs in the background; output goes to the log.")
                     .font(.caption)
@@ -532,7 +504,8 @@ struct CornerConfigSheet: View {
                     }
                     .padding(10)
                     .background {
-                        optionBackground(selected: snapPosition == position, glass: glassEnabled, colorScheme: colorScheme, radius: 10)
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(selectedOptionFill(selected: snapPosition == position, colorScheme: colorScheme))
                     }
                     .overlay {
                         RoundedRectangle(cornerRadius: 10)
@@ -606,7 +579,8 @@ struct CornerConfigSheet: View {
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
                             .background {
-                                optionBackground(selected: selectedSystemAction == action, glass: glassEnabled, colorScheme: colorScheme, radius: 8)
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(selectedOptionFill(selected: selectedSystemAction == action, colorScheme: colorScheme))
                             }
                             .contentShape(Rectangle())
                             .onTapGesture {
@@ -635,6 +609,7 @@ struct CornerConfigSheet: View {
                             }
                         }
                         .pickerStyle(.segmented)
+                        .onChange(of: screenshotKind) { _, _ in systemTouched = true }
                     }
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Destination")
@@ -646,6 +621,7 @@ struct CornerConfigSheet: View {
                             }
                         }
                         .pickerStyle(.segmented)
+                        .onChange(of: screenshotDestination) { _, _ in systemTouched = true }
                         Text("Requires Screen Recording access (asked on first capture).")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -667,7 +643,6 @@ struct CornerConfigSheet: View {
                                 }
                                 .buttonStyle(.plain)
                                 .foregroundColor(.accentColor)
-                                .adaptiveGlassButton(glass: glassEnabled)
                             }
                         }
                     }
@@ -915,6 +890,7 @@ struct CornerConfigSheet: View {
 
         if panel.runModal() == .OK, let url = panel.url {
             screenshotDirectory = url.path
+            systemTouched = true
         }
     }
 }

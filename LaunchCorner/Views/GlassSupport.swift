@@ -75,31 +75,13 @@ extension View {
         return colorScheme == .dark ? Color.white.opacity(0.06) : Color.primary.opacity(0.05)
     }
 
-    /// Detail-area container: glass card in glass mode, legacy card otherwise.
-    /// Detail content (fields, rows, pickers) needs the card in both modes —
-    /// bare controls on flat material read as unfinished.
+    /// Detail-area container: always the flat legacy card. Liquid Glass lives
+    /// only in the App option, nowhere else in this sheet.
     @ViewBuilder
     func detailChrome(glass: Bool, colorScheme: ColorScheme) -> some View {
         self
             .padding(12)
-            .cardChrome(glass: glass, colorScheme: colorScheme)
-    }
-
-    /// Per-option glass pill (snap cells, system rows): Liquid Glass in glass
-    /// mode with an accent tint when selected, legacy fills otherwise.
-    @ViewBuilder
-    func optionBackground(selected: Bool, glass: Bool, colorScheme: ColorScheme, radius: CGFloat) -> some View {
-        if #available(macOS 26, *), glass {
-            RoundedRectangle(cornerRadius: radius)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: radius))
-                .overlay {
-                    RoundedRectangle(cornerRadius: radius)
-                        .fill(selected ? Color.accentColor.opacity(colorScheme == .dark ? 0.25 : 0.12) : .clear)
-                }
-        } else {
-            RoundedRectangle(cornerRadius: radius)
-                .fill(selectedOptionFill(selected: selected, colorScheme: colorScheme))
-        }
+            .cardChrome(glass: false, colorScheme: colorScheme)
     }
 
     /// Overrides the inner (legacy) button style with glass on 26+. No-op otherwise,
