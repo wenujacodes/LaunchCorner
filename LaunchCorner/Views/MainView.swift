@@ -101,6 +101,9 @@ struct MainView: View {
         .background(GlassWindowConfigurator(enabled: glassEnabled))
         .frame(width: 660, height: 540)
         .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
+        // Match the window's rounded mask: square content pixels fringing
+        // past the corner curve read as a white seam on transparent windows.
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .onAppear {
             if permissionManager.isAccessibilityGranted && configStore.config.isActive {
                 engine.start()

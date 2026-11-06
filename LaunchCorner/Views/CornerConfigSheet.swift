@@ -159,6 +159,7 @@ struct CornerConfigSheet: View {
         .background(GlassWindowConfigurator(enabled: glassEnabled))
         .frame(width: 520, height: 600)
         .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .onAppear {
             loadCurrentConfig()
         }
