@@ -9,6 +9,7 @@ struct SettingsView: View {
     var onBack: () -> Void
     
     @State private var showingResetAlert = false
+    @State private var settingsHeaderCollapsed = false
     
     private var glassEnabled: Bool { GlassSupport.isEnabled(configStore.config) }
     
@@ -54,7 +55,7 @@ struct SettingsView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Top Left Title (Matching original screenshot)
+            // Collapsing title: fades and yields its space to content while scrolling
             HStack {
                 Text("Settings")
                     .font(.title2)
@@ -65,9 +66,21 @@ struct SettingsView: View {
             .padding(.horizontal, 28)
             .padding(.top, 4)
             .padding(.bottom, 16)
+            .opacity(settingsHeaderCollapsed ? 0 : 1)
+            .frame(height: settingsHeaderCollapsed ? 0 : nil, alignment: .top)
+            .clipped()
+            .animation(.easeInOut(duration: 0.2), value: settingsHeaderCollapsed)
             
             ScrollView {
                 VStack(spacing: 24) {
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: SettingsScrollOffsetKey.self,
+                            value: proxy.frame(in: .named("settingsScroll")).minY
+                        )
+                    }
+                    .frame(height: 0)
+                    
                     // General
                     VStack(alignment: .leading, spacing: 10) {
                         Text("General")
@@ -257,7 +270,7 @@ struct SettingsView: View {
                                         .font(.body)
                                         .foregroundColor(.accentColor)
                                     Spacer()
-                                    Image(systemName: "bubble.left.and.bubble.right")
+                                    Image(systemName: "exclamationmark.bubble")
                                         .foregroundColor(.secondary)
                                 }
                             }
@@ -270,7 +283,7 @@ struct SettingsView: View {
                                         .font(.body)
                                         .foregroundColor(.accentColor)
                                     Spacer()
-                                    Image(systemName: "arrow.up.right.square")
+                                    Image(systemName: "link")
                                         .foregroundColor(.secondary)
                                 }
                             }
@@ -283,7 +296,7 @@ struct SettingsView: View {
                                         .font(.body)
                                         .foregroundColor(.accentColor)
                                     Spacer()
-                                    Image(systemName: "arrow.up.right.square")
+                                    Image(systemName: "link")
                                         .foregroundColor(.secondary)
                                 }
                             }
@@ -294,6 +307,10 @@ struct SettingsView: View {
                 }
                 .padding(.horizontal, 28)
                 .padding(.bottom, 24)
+            }
+            .coordinateSpace(name: "settingsScroll")
+            .onPreferenceChange(SettingsScrollOffsetKey.self) { minY in
+                settingsHeaderCollapsed = minY < -20
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -308,5 +325,12 @@ struct SettingsView: View {
         } message: {
             Text("This will clear all corner assignments, reset preferences, and return LaunchCorner to setup. This cannot be undone.")
         }
+    }
+}
+
+private struct SettingsScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }

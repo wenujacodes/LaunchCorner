@@ -97,7 +97,7 @@ struct CornerButton: View {
                             Circle()
                                 .stroke(
                                     cornerAction.isConfigured ? Color.accentColor : Color.secondary.opacity(0.5),
-                                    style: StrokeStyle(lineWidth: 1.5, dash: cornerAction.isConfigured ? [] : [4])
+                                    lineWidth: 1.5
                                 )
                         )
                 } else {

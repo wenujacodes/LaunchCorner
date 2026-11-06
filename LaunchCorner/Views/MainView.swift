@@ -43,10 +43,8 @@ struct MainView: View {
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
                             .legacyPillBackground(glass: glassEnabled, shape: Capsule())
-                            .clipShape(Capsule())
                         }
                         .buttonStyle(.plain)
-                        .adaptiveGlassButton(glass: glassEnabled)
                         .accessibilityLabel("Back to corner setup")
                         .help("Back to corner setup")
                     } else {
@@ -61,10 +59,8 @@ struct MainView: View {
                                 .foregroundColor(.secondary)
                                 .frame(width: 30, height: 30)
                                 .legacyPillBackground(glass: glassEnabled, shape: Circle())
-                                .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
-                        .adaptiveGlassButton(glass: glassEnabled)
                         .accessibilityLabel("Open Settings")
                         .help("Open Settings (⌘,)")
                     }

@@ -50,14 +50,19 @@ extension View {
         }
     }
 
-    /// Legacy pill/circle material background. Renders nothing when glass is on
-    /// (the outer glass button style provides the chrome instead).
+    /// Pill/circle control background: explicit Liquid Glass on 26+, legacy
+    /// ultra-thin material otherwise. Explicit `glassEffect` (rather than a
+    /// glass button style) so the glass is always visible.
     @ViewBuilder
     func legacyPillBackground<S: Shape>(glass: Bool, shape: S) -> some View {
-        if !glass {
-            self.background(shape.fill(.ultraThinMaterial))
-        } else {
-            self
+        self.background {
+            if glass {
+                if #available(macOS 26, *) {
+                    shape.glassEffect(.regular, in: shape)
+                }
+            } else {
+                shape.fill(.ultraThinMaterial)
+            }
         }
     }
 

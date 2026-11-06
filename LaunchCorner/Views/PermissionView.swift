@@ -73,19 +73,21 @@ struct PermissionView: View {
                 Text("Open System Settings")
                     .font(.body)
                     .fontWeight(.medium)
-                    .foregroundColor(.white)
+                    .foregroundStyle(glassEnabled ? Color.primary : Color.white)
                     .padding(.horizontal, 28)
                     .padding(.vertical, 10)
                     .background {
-                        if !glassEnabled {
+                        if glassEnabled {
+                            if #available(macOS 26, *) {
+                                Capsule().glassEffect(.regular, in: .capsule)
+                            }
+                        } else {
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color.accentColor)
                         }
                     }
             }
             .buttonStyle(.plain)
-            .tint(.accentColor)
-            .adaptiveGlassButton(glass: glassEnabled, prominent: true)
             .padding(.bottom, 6)
             
             // Helper text
