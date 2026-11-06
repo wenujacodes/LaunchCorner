@@ -93,13 +93,6 @@ struct CornerButton: View {
                         .fill(.clear)
                         .frame(width: buttonSize, height: buttonSize)
                         .glassEffect(.regular, in: .circle)
-                        .overlay(
-                            Circle()
-                                .stroke(
-                                    cornerAction.isConfigured ? Color.accentColor : Color.secondary.opacity(0.5),
-                                    lineWidth: 1.5
-                                )
-                        )
                 } else {
                     Circle()
                         .fill(colorScheme == .dark ? Color.black.opacity(0.4) : Color.white)
