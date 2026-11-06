@@ -23,6 +23,31 @@ enum Corner: String, Codable, CaseIterable, Identifiable {
         case .bottomRight: return "arrow.down.right"
         }
     }
+
+    /// Defaults key macOS uses for this corner's Hot Corner action.
+    var hotCornerDefaultsKey: String {
+        switch self {
+        case .topLeft: return "wvous-tl-corner"
+        case .topRight: return "wvous-tr-corner"
+        case .bottomLeft: return "wvous-bl-corner"
+        case .bottomRight: return "wvous-br-corner"
+        }
+    }
+}
+
+// MARK: - macOS system Hot Corners detection
+
+enum MacOSHotCorners {
+    /// Direct link to System Settings → Desktop & Dock → Hot Corners.
+    static let settingsURL = URL(string: "x-apple.systempreferences:com.apple.Desktop-Settings.extension?HotCorners")!
+
+    /// True when the macOS system hot corner is set to nothing (0/1) or
+    /// unreadable (fail-open: never block configuration on detection failure).
+    static func isDisabled(_ corner: Corner) -> Bool {
+        guard let dock = UserDefaults(suiteName: "com.apple.dock") else { return true }
+        let value = dock.integer(forKey: corner.hotCornerDefaultsKey)
+        return value == 0 || value == 1
+    }
 }
 
 // What action to perform when a corner is triggered

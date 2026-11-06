@@ -85,6 +85,23 @@ extension View {
             .cardChrome(glass: glass, colorScheme: colorScheme)
     }
 
+    /// Per-option glass pill (snap cells, system rows): Liquid Glass in glass
+    /// mode with an accent tint when selected, legacy fills otherwise.
+    @ViewBuilder
+    func optionBackground(selected: Bool, glass: Bool, colorScheme: ColorScheme, radius: CGFloat) -> some View {
+        if #available(macOS 26, *), glass {
+            RoundedRectangle(cornerRadius: radius)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: radius))
+                .overlay {
+                    RoundedRectangle(cornerRadius: radius)
+                        .fill(selected ? Color.accentColor.opacity(colorScheme == .dark ? 0.25 : 0.12) : .clear)
+                }
+        } else {
+            RoundedRectangle(cornerRadius: radius)
+                .fill(selectedOptionFill(selected: selected, colorScheme: colorScheme))
+        }
+    }
+
     /// Overrides the inner (legacy) button style with glass on 26+. No-op otherwise,
     /// so call sites keep their existing `.buttonStyle(...)` for older systems.
     @ViewBuilder

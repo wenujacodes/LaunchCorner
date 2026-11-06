@@ -196,28 +196,48 @@ func fuzzMain() {
     out("FUZZ actions=\(actions.count) nonNone=\(nonNone) configs=\(cfgOk)/\(cfgBlobs.count)")
 }
 
-// MARK: - snap end-to-end (launches TextEdit, snaps, verifies, cleans up)
+// MARK: - snap end-to-end (Finder window: closable with zero save prompts)
 func snaptestMain() {
     guard AXIsProcessTrusted() else { out("SNAP SKIP-NO-AX"); return }
-    let fm = FileManager.default
-    let testFile = "/tmp/lc_snap_test.txt"
-    try? "snap me".write(toFile: testFile, atomically: true, encoding: .utf8)
-    let wasRunning = MainThread.value {
-        NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.TextEdit").first != nil
-    }
-    MainThread.value { NSWorkspace.shared.open(URL(fileURLWithPath: testFile)) }
-    // wait for frontmost TextEdit (≤10s)
+    MainThread.value { NSWorkspace.shared.open(URL(fileURLWithPath: "/tmp")) }
+    // wait for frontmost Finder (≤10s)
     var ok = false
     for _ in 0..<100 {
         Thread.sleep(forTimeInterval: 0.1)
         let front = MainThread.value { NSWorkspace.shared.frontmostApplication?.bundleIdentifier }
-        if front == "com.apple.TextEdit" { ok = true; break }
+        if front == "com.apple.finder" { ok = true; break }
     }
     guard ok else { out("SNAP FAIL-frontmost"); return }
     Thread.sleep(forTimeInterval: 0.5)
-    func check(_ pos: SnapPosition) -> Bool {
+    // Capture OUR window ref now; close exactly it at cleanup.
+    var ourWindow: AXUIElement? = nil
+    if let app = MainThread.value({ NSWorkspace.shared.frontmostApplication }) {
+        let el = AXUIElementCreateApplication(app.processIdentifier)
+        var ref: CFTypeRef?
+        if AXUIElementCopyAttributeValue(el, kAXFocusedWindowAttribute as CFString, &ref) == .success,
+           let raw = ref, CFGetTypeID(raw) == AXUIElementGetTypeID() {
+            ourWindow = unsafeBitCast(raw, to: AXUIElement.self)
+        }
+    }
+    func ensureOurWindowFront(_ win: AXUIElement?) -> Bool {
+        // The suite runs on a live machine: politely steal focus back a few
+        // times, then SKIP (not FAIL) if the user keeps it.
+        for _ in 0..<6 {
+            let front = MainThread.value { NSWorkspace.shared.frontmostApplication?.bundleIdentifier }
+            if front == "com.apple.finder" { return true }
+            MainThread.value {
+                NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.finder").first?.activate()
+            }
+            if let w = win { AXUIElementPerformAction(w, kAXRaiseAction as CFString) }
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+        return false
+    }
+    func check(_ pos: SnapPosition) -> Bool? {
+        guard ensureOurWindowFront(ourWindow) else { out("SNAP SKIP-FOCUS"); return nil }
         guard WindowSnapExecutor.snap(pos) else { return false }
-        Thread.sleep(forTimeInterval: 0.3)
+        // Fullscreen exits re-snap async after ~0.9s; allow settle.
+        Thread.sleep(forTimeInterval: 1.4)
         // read back focused window geometry
         guard let app = MainThread.value({ NSWorkspace.shared.frontmostApplication }) else { return false }
         let el = AXUIElementCreateApplication(app.processIdentifier)
@@ -253,31 +273,22 @@ func snaptestMain() {
         }
         return abs(pt.x-exp.minX)<=8 && abs(pt.y-exp.minY)<=8 && abs(sz.width-exp.width)<=8 && abs(sz.height-exp.height)<=8
     }
-    let l = check(.left), q = check(.bottomRight)
+    guard let l = check(.left), let q = check(.bottomRight) else { return }
     out("SNAP left=\(l ? "PASS" : "FAIL") quarter=\(q ? "PASS" : "FAIL")")
-    // cleanup: close our window via AX, quit TextEdit only if we launched it
-    if let app = MainThread.value({
-        NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.TextEdit").first
-    }) {
-        let el = AXUIElementCreateApplication(app.processIdentifier)
-        var ref: CFTypeRef?
-        if AXUIElementCopyAttributeValue(el, kAXFocusedWindowAttribute as CFString, &ref) == .success, let raw = ref {
-            let win = unsafeBitCast(raw, to: AXUIElement.self)
-            var wins: CFTypeRef?
-            if AXUIElementCopyAttributeValue(win, kAXChildrenAttribute as CFString, &wins) == .success, let kids = wins as? [AXUIElement] {
-                for k in kids {
-                    var sub: CFTypeRef?
-                    if AXUIElementCopyAttributeValue(k, kAXSubroleAttribute as CFString, &sub) == .success,
-                       (sub as? String) == kAXCloseButtonSubrole as String {
-                        AXUIElementPerformAction(k, kAXPressAction as CFString)
-                        break
-                    }
+    // cleanup: close exactly our window (Finder never prompts on close).
+    // Finder itself is never terminated.
+    if let win = ourWindow {
+        var wins: CFTypeRef?
+        if AXUIElementCopyAttributeValue(win, kAXChildrenAttribute as CFString, &wins) == .success, let kids = wins as? [AXUIElement] {
+            for k in kids {
+                var sub: CFTypeRef?
+                if AXUIElementCopyAttributeValue(k, kAXSubroleAttribute as CFString, &sub) == .success,
+                   (sub as? String) == kAXCloseButtonSubrole as String {
+                    AXUIElementPerformAction(k, kAXPressAction as CFString)
+                    break
                 }
             }
         }
-        Thread.sleep(forTimeInterval: 0.5)
-        if !wasRunning { MainThread.value { app.terminate() } }
     }
-    try? fm.removeItem(atPath: testFile)
 }
 } // end harnessMain

@@ -7,8 +7,21 @@ struct ScreenCornerView: View {
     
     @State private var selectedScreenID: String? = nil
     @State private var activeSheet: Corner? = nil
+    @State private var pendingCorner: Corner? = nil
+    @State private var showingHotCornerGate = false
     
     private let imageSize: CGFloat = 460
+    
+    /// Opens the config sheet only when the macOS system corner is disabled;
+    /// otherwise pops an alert sending the user to Hot Corners settings.
+    private func requestConfigure(_ corner: Corner) {
+        if MacOSHotCorners.isDisabled(corner) {
+            activeSheet = corner
+        } else {
+            pendingCorner = corner
+            showingHotCornerGate = true
+        }
+    }
     
     var body: some View {
         VStack(spacing: 12) {
@@ -34,21 +47,21 @@ struct ScreenCornerView: View {
                 VStack(spacing: 0) {
                     HStack(spacing: 0) {
                         CornerButton(corner: .topLeft, screenID: selectedScreenID) {
-                            activeSheet = .topLeft
+                            requestConfigure(.topLeft)
                         }
                         Spacer()
                         CornerButton(corner: .topRight, screenID: selectedScreenID) {
-                            activeSheet = .topRight
+                            requestConfigure(.topRight)
                         }
                     }
                     Spacer()
                     HStack(spacing: 0) {
                         CornerButton(corner: .bottomLeft, screenID: selectedScreenID) {
-                            activeSheet = .bottomLeft
+                            requestConfigure(.bottomLeft)
                         }
                         Spacer()
                         CornerButton(corner: .bottomRight, screenID: selectedScreenID) {
-                            activeSheet = .bottomRight
+                            requestConfigure(.bottomRight)
                         }
                     }
                 }
@@ -64,6 +77,29 @@ struct ScreenCornerView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(item: $activeSheet) { corner in
             CornerConfigSheet(corner: corner, screenID: selectedScreenID)
+        }
+        .alert("Disable the macOS Hot Corner first", isPresented: $showingHotCornerGate) {
+            Button("Cancel", role: .cancel) {
+                pendingCorner = nil
+            }
+            Button("Open Hot Corners…") {
+                NSWorkspace.shared.open(MacOSHotCorners.settingsURL)
+            }
+            Button("I've Disabled It") {
+                // Re-detect: the dock defaults may have lagged, so a re-tap
+                // also rechecks. Only opens the sheet when truly disabled.
+                if let corner = pendingCorner, MacOSHotCorners.isDisabled(corner) {
+                    activeSheet = corner
+                    pendingCorner = nil
+                } else {
+                    // Still enabled: re-present the alert after dismissal.
+                    DispatchQueue.main.async {
+                        showingHotCornerGate = true
+                    }
+                }
+            }
+        } message: {
+            Text("This corner is still assigned in macOS (System Settings → Desktop & Dock → Hot Corners…). Set it to — first, otherwise both actions fire at once.")
         }
     }
 }
