@@ -45,9 +45,9 @@ Each corner can trigger one of five action types (configured per corner, Liquid 
 
 - **App** — launch any application.
 - **Quick Link** — open a URL, `shortcuts://` Shortcut link, or file path, optionally with a specific app.
-- **Command** — run a shell command (pick any shell from your Mac) or a script file (Bash, AppleScript, Python, JavaScript, TypeScript, Go, Ruby, C#). Script interpreters other than the built-ins install via Homebrew (e.g. `brew install node`).
+- **Command** — run a script file (Bash, AppleScript, Python, JavaScript, TypeScript, Go, Ruby, C#). Script interpreters other than the built-ins install via Homebrew (e.g. `brew install node`).
 - **Window** — snap the front window to a half or quarter of the display. Requires Accessibility access (already required by the app).
-- **System** — Spotlight, play/pause/next/previous track, toggle light/dark, screen saver, lock screen, sleep display, Mission Control, Application Windows, Show Desktop, plus screenshots (fullscreen/selection/window → file or clipboard). Keyboard-based actions require Accessibility access; screenshots require Screen Recording access on first use.
+- **System** — Spotlight, play/pause/next/previous track, screen saver, lock screen, sleep display, Application Windows, plus screenshots (fullscreen/selection/window → file or clipboard). Keyboard-based actions require Accessibility access; screenshots require Screen Recording access on first use.
 
 ---
 

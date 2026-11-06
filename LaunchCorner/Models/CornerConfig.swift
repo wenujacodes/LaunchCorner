@@ -30,7 +30,6 @@ enum CornerAction: Equatable {
     case none
     case launchApp(bundlePath: String, appName: String)
     case quickLink(name: String, url: String, openWithBundleID: String?)
-    case shellCommand(command: String, shell: String)
     case script(language: ScriptLanguage, path: String, description: String)
     case windowSnap(position: SnapPosition)
     case systemAction(SystemAction)
@@ -41,7 +40,6 @@ enum CornerAction: Equatable {
         case .none: return "None"
         case .launchApp(_, let appName): return appName
         case .quickLink(let name, let url, _): return name.isEmpty ? url : name
-        case .shellCommand: return "Shell Command"
         case .script(let language, let path, _): return "\(language.displayName): \((path as NSString).lastPathComponent)"
         case .windowSnap(let position): return "Snap \(position.displayName)"
         case .systemAction(let action): return action.displayName
@@ -55,8 +53,6 @@ enum CornerAction: Equatable {
         case .none: return ""
         case .launchApp(let bundlePath, _): return bundlePath
         case .quickLink(_, let url, _): return url
-        case .shellCommand(let command, let shell):
-            return "\(shell): \(command)".trimmingCharacters(in: .whitespaces)
         case .script(_, let path, let description):
             return description.isEmpty ? path : description
         case .windowSnap(let position): return position.detailText
@@ -72,7 +68,6 @@ enum CornerAction: Equatable {
         case .none: return "plus"
         case .launchApp: return "app.dashed"
         case .quickLink: return "link"
-        case .shellCommand: return "terminal"
         case .script(let language, _, _): return language.symbolName
         case .windowSnap(let position): return position.symbolName
         case .systemAction(let action): return action.symbolName
@@ -83,13 +78,10 @@ enum CornerAction: Equatable {
     var isConfigured: Bool {
         if case .none = self { return false }
         // Treat empty payloads as unconfigured so stale entries never fire.
-        // (shell falls back to /bin/zsh at runtime, so only the command gates.)
         switch self {
         case .launchApp(let bundlePath, _):
             return !bundlePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .quickLink(_, let url, _): return !url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        case .shellCommand(let command, _):
-            return !command.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .script(_, let path, _): return !path.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         default: return true
         }
@@ -182,8 +174,8 @@ enum SnapPosition: String, Codable, CaseIterable, Identifiable {
 
 enum SystemAction: String, Codable, CaseIterable, Identifiable {
     case spotlight, mediaPlayPause, mediaNext, mediaPrevious
-    case toggleAppearance, startScreenSaver, lockScreen, sleepDisplay
-    case missionControl, appExpose, showDesktop
+    case startScreenSaver, lockScreen, sleepDisplay
+    case appExpose
     var id: String { rawValue }
 
     var displayName: String {
@@ -192,13 +184,10 @@ enum SystemAction: String, Codable, CaseIterable, Identifiable {
         case .mediaPlayPause: return "Play / Pause"
         case .mediaNext: return "Next Track"
         case .mediaPrevious: return "Previous Track"
-        case .toggleAppearance: return "Toggle Light / Dark"
         case .startScreenSaver: return "Start Screen Saver"
         case .lockScreen: return "Lock Screen"
         case .sleepDisplay: return "Sleep Display"
-        case .missionControl: return "Mission Control"
         case .appExpose: return "Application Windows"
-        case .showDesktop: return "Show Desktop"
         }
     }
 
@@ -208,13 +197,10 @@ enum SystemAction: String, Codable, CaseIterable, Identifiable {
         case .mediaPlayPause: return "Toggles system-wide playback"
         case .mediaNext: return "Skips to the next track"
         case .mediaPrevious: return "Goes back to the previous track"
-        case .toggleAppearance: return "Switches between light and dark mode"
         case .startScreenSaver: return "Starts the screen saver"
         case .lockScreen: return "Locks the screen (⌃⌘Q)"
         case .sleepDisplay: return "Puts displays to sleep immediately"
-        case .missionControl: return "Opens Mission Control (⌃↑)"
         case .appExpose: return "Shows all windows of the front app (⌃↓)"
-        case .showDesktop: return "Shows the desktop (F11)"
         }
     }
 
@@ -224,13 +210,10 @@ enum SystemAction: String, Codable, CaseIterable, Identifiable {
         case .mediaPlayPause: return "playpause.fill"
         case .mediaNext: return "forward.fill"
         case .mediaPrevious: return "backward.fill"
-        case .toggleAppearance: return "circle.lefthalf.fill"
         case .startScreenSaver: return "clock.fill"
         case .lockScreen: return "lock.fill"
         case .sleepDisplay: return "moon.fill"
-        case .missionControl: return "square.grid.3x3"
         case .appExpose: return "square.on.square"
-        case .showDesktop: return "macwindow"
         }
     }
 }
@@ -274,7 +257,7 @@ private struct AnyCodingKey: CodingKey {
 
 extension CornerAction: Codable {
     private enum Key: String, CodingKey {
-        case none, launchApp, quickLink, shellCommand, script, windowSnap, systemAction, screenshot
+        case none, launchApp, quickLink, script, windowSnap, systemAction, screenshot
     }
 
     // Per-field tolerance: a missing/wrong-typed sibling string field (including
@@ -322,24 +305,6 @@ extension CornerAction: Codable {
             try c.encode(name, forKey: .name)
             try c.encode(url, forKey: .url)
             try c.encodeIfPresent(openWithBundleID, forKey: .openWithBundleID)
-        }
-    }
-    private struct ShellCommandPayload: Codable {
-        var command: String = ""
-        var shell: String = "/bin/zsh"
-        enum K: String, CodingKey { case command, shell }
-        init(command: String = "", shell: String = "/bin/zsh") {
-            self.command = command; self.shell = shell
-        }
-        init(from decoder: Decoder) throws {
-            let c = try decoder.container(keyedBy: K.self)
-            command = CornerAction.field(c, .command, fallback: "")
-            shell = CornerAction.field(c, .shell, fallback: "/bin/zsh")
-        }
-        func encode(to encoder: Encoder) throws {
-            var c = encoder.container(keyedBy: K.self)
-            try c.encode(command, forKey: .command)
-            try c.encode(shell, forKey: .shell)
         }
     }
     private struct ScriptPayload: Codable {
@@ -431,10 +396,6 @@ extension CornerAction: Codable {
             let p = (try? container.decode(QuickLinkPayload.self, forKey: .quickLink)) ?? QuickLinkPayload()
             self = p.url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 ? .none : .quickLink(name: p.name, url: p.url, openWithBundleID: p.openWithBundleID)
-        case .shellCommand:
-            let p = (try? container.decode(ShellCommandPayload.self, forKey: .shellCommand)) ?? ShellCommandPayload()
-            self = p.command.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? .none : .shellCommand(command: p.command, shell: p.shell)
         case .script:
             let p = (try? container.decode(ScriptPayload.self, forKey: .script)) ?? ScriptPayload()
             self = p.path.isEmpty ? .none : .script(language: p.language, path: p.path, description: p.description)
@@ -471,8 +432,6 @@ extension CornerAction: Codable {
             try container.encode(LaunchAppPayload(bundlePath: bundlePath, appName: appName), forKey: .launchApp)
         case .quickLink(let name, let url, let openWithBundleID):
             try container.encode(QuickLinkPayload(name: name, url: url, openWithBundleID: openWithBundleID), forKey: .quickLink)
-        case .shellCommand(let command, let shell):
-            try container.encode(ShellCommandPayload(command: command, shell: shell), forKey: .shellCommand)
         case .script(let language, let path, let description):
             try container.encode(ScriptPayload(language: language, path: path, description: description), forKey: .script)
         case .windowSnap(let position):
@@ -506,7 +465,7 @@ struct ScreenCornerConfig: Codable, Equatable {
             }
         }
         for corner in Corner.allCases where corners[corner.rawValue] == nil {
-            corners[corner.rawValue] = .none
+            corners[corner.rawValue] = CornerAction.none
         }
         self.corners = corners
     }

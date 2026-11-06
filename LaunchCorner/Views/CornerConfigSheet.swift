@@ -18,7 +18,7 @@ struct CornerConfigSheet: View {
             switch self {
             case .app: return "App"
             case .quickLink: return "Quick Link"
-            case .command: return "Command"
+            case .command: return "Script"
             case .window: return "Window"
             case .system: return "System"
             }
@@ -28,7 +28,7 @@ struct CornerConfigSheet: View {
             switch self {
             case .app: return "app.dashed"
             case .quickLink: return "link"
-            case .command: return "terminal"
+            case .command: return "doc.text"
             case .window: return "macwindow"
             case .system: return "bolt.fill"
             }
@@ -48,10 +48,7 @@ struct CornerConfigSheet: View {
     @State private var linkOpenWithBundleID: String? = nil
     @State private var linkOpenWithName: String = ""
 
-    // Command draft
-    @State private var commandMode: Int = 0 // 0 = shell, 1 = script
-    @State private var shellCommandText: String = ""
-    @State private var selectedShell: String = "/bin/zsh"
+    // Command draft (script only)
     @State private var scriptLanguage: ScriptLanguage = .bash
     @State private var scriptPath: String = ""
     @State private var scriptDescription: String = ""
@@ -77,8 +74,6 @@ struct CornerConfigSheet: View {
     @State private var clearArmed = false
 
     private var glassEnabled: Bool { GlassSupport.isEnabled(configStore.config) }
-
-    private static let fallbackShells = ["/bin/zsh", "/bin/bash", "/bin/sh"]
 
     init(corner: Corner, screenID: String? = nil) {
         self.corner = corner
@@ -262,36 +257,37 @@ struct CornerConfigSheet: View {
     private var segmentRow: some View {
         HStack(spacing: 2) {
             ForEach(ConfigCategory.allCases) { category in
-                Button {
-                    selectedCategory = category
-                } label: {
-                    VStack(spacing: 3) {
-                        Image(systemName: category.symbolName)
-                            .font(.system(size: 16))
-                            .accessibilityHidden(true)
-                        Text(category.title)
-                            .font(.caption)
-                            .fontWeight(selectedCategory == category ? .semibold : .medium)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
-                    .padding(.horizontal, 2)
-                    .foregroundColor(segmentForeground(for: category))
-                    .background {
-                        if glassEnabled {
-                            if #available(macOS 26, *), selectedCategory == category {
-                                RoundedRectangle(cornerRadius: 9)
-                                    .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.30 : 0.16))
-                            }
-                        } else {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(selectedOptionFill(selected: selectedCategory == category, colorScheme: colorScheme))
+                // Explicit tap target (not Button): the whole segment rect must
+                // respond, including unselected segments with no background.
+                VStack(spacing: 3) {
+                    Image(systemName: category.symbolName)
+                        .font(.system(size: 16))
+                        .accessibilityHidden(true)
+                    Text(category.title)
+                        .font(.caption)
+                        .fontWeight(selectedCategory == category ? .semibold : .medium)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .padding(.horizontal, 2)
+                .foregroundColor(segmentForeground(for: category))
+                .background {
+                    if glassEnabled {
+                        if #available(macOS 26, *), selectedCategory == category {
+                            RoundedRectangle(cornerRadius: 9)
+                                .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.30 : 0.16))
                         }
+                    } else {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(selectedOptionFill(selected: selectedCategory == category, colorScheme: colorScheme))
                     }
                 }
-                .buttonStyle(.plain)
-                .contentShape(RoundedRectangle(cornerRadius: 10))
+                .contentShape(Rectangle())
+                .onTapGesture { selectedCategory = category }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
                 .accessibilityAddTraits(selectedCategory == category ? .isSelected : [])
+                .accessibilityAction { selectedCategory = category }
                 .help(category.title)
             }
         }
@@ -442,82 +438,46 @@ struct CornerConfigSheet: View {
 
     private var commandDetail: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Picker("Type", selection: $commandMode) {
-                Text("Shell Command").tag(0)
-                Text("Script").tag(1)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Language")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Picker("Language", selection: $scriptLanguage) {
+                    ForEach(ScriptLanguage.allCases) { language in
+                        Text(language.displayName).tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
             }
-            .pickerStyle(.segmented)
-
-            if commandMode == 0 {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Shell")
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Script file")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                HStack {
+                    Text(scriptPath.isEmpty ? "No file chosen" : scriptPath)
                         .font(.caption)
-                        .foregroundColor(.secondary)
-                    Picker("Shell", selection: $selectedShell) {
-                        ForEach(shellOptions, id: \.self) { shell in
-                            Text(shell).tag(shell)
-                        }
+                        .foregroundColor(scriptPath.isEmpty ? .secondary : .primary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer()
+                    Button(scriptPath.isEmpty ? "Choose..." : "Change...") {
+                        selectScript()
                     }
-                    .pickerStyle(.menu)
+                    .buttonStyle(.plain)
+                    .foregroundColor(.accentColor)
                 }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Command")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    TextEditor(text: $shellCommandText)
-                        .font(.system(.body, design: .monospaced))
-                        .frame(minHeight: 90)
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.primary.opacity(0.15), lineWidth: 1)
-                        )
-                    Text("Runs visibly in your default terminal app.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Language")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Picker("Language", selection: $scriptLanguage) {
-                        ForEach(ScriptLanguage.allCases) { language in
-                            Text(language.displayName).tag(language)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Script file")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    HStack {
-                        Text(scriptPath.isEmpty ? "No file chosen" : scriptPath)
-                            .font(.caption)
-                            .foregroundColor(scriptPath.isEmpty ? .secondary : .primary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        Spacer()
-                        Button(scriptPath.isEmpty ? "Choose..." : "Change...") {
-                            selectScript()
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundColor(.accentColor)
-                    }
-                    Text("Runs in the background; output goes to the log.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Description (optional)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    TextField("What does this script do?", text: $scriptDescription)
-                        .textFieldStyle(.roundedBorder)
-                }
-                interpreterStatusLine(for: scriptLanguage)
+                Text("Runs in the background; output goes to the log.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Description (optional)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                TextField("What does this script do?", text: $scriptDescription)
+                    .textFieldStyle(.roundedBorder)
+            }
+            interpreterStatusLine(for: scriptLanguage)
         }
         .detailChrome(glass: glassEnabled, colorScheme: colorScheme)
     }
@@ -553,35 +513,39 @@ struct CornerConfigSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                 ForEach(SnapPosition.allCases) { position in
-                    Button {
+                    HStack(spacing: 8) {
+                        Image(systemName: position.symbolName)
+                            .font(.system(size: 16))
+                            .foregroundColor(snapPosition == position ? .accentColor : .secondary)
+                            .accessibilityHidden(true)
+                        Text(position.displayName)
+                            .font(.body)
+                            .fontWeight(snapPosition == position ? .semibold : .regular)
+                            .foregroundColor(.primary)
+                        Spacer()
+                    }
+                    .padding(10)
+                    .background {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(selectedOptionFill(selected: snapPosition == position, colorScheme: colorScheme))
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(snapPosition == position ? Color.accentColor.opacity(0.6) : Color.primary.opacity(0.08),
+                                    lineWidth: snapPosition == position ? 1.5 : 1)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
                         snapPosition = position
                         windowTouched = true
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: position.symbolName)
-                                .font(.system(size: 16))
-                                .foregroundColor(snapPosition == position ? .accentColor : .secondary)
-                                .accessibilityHidden(true)
-                            Text(position.displayName)
-                                .font(.body)
-                                .fontWeight(snapPosition == position ? .semibold : .regular)
-                                .foregroundColor(.primary)
-                            Spacer()
-                        }
-                        .padding(10)
-                        .background {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(selectedOptionFill(selected: snapPosition == position, colorScheme: colorScheme))
-                        }
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(snapPosition == position ? Color.accentColor.opacity(0.6) : Color.primary.opacity(0.08),
-                                        lineWidth: snapPosition == position ? 1.5 : 1)
-                        }
                     }
-                    .buttonStyle(.plain)
-                    .contentShape(RoundedRectangle(cornerRadius: 10))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isButton)
                     .accessibilityAddTraits(snapPosition == position ? .isSelected : [])
+                    .accessibilityAction {
+                        snapPosition = position
+                        windowTouched = true
+                    }
                     .help(position.detailText)
                 }
             }
@@ -611,44 +575,48 @@ struct CornerConfigSheet: View {
                             Divider()
                                 .padding(.horizontal, 10)
                         }
-                        Button {
-                            selectedSystemAction = action
-                            systemTouched = true
-                        } label: {
-                            HStack(spacing: 10) {
-                                Image(systemName: action.symbolName)
-                                    .font(.system(size: 14))
-                                    .foregroundColor(selectedSystemAction == action ? .accentColor : .secondary)
-                                    .frame(width: 22)
-                                    .accessibilityHidden(true)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(action.displayName)
-                                        .font(.body)
-                                        .fontWeight(selectedSystemAction == action ? .semibold : .regular)
-                                        .foregroundColor(.primary)
-                                    Text(action.detailText)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(1)
-                                }
-                                Spacer()
-                                if selectedSystemAction == action {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.accentColor)
-                                        .accessibilityHidden(true)
-                                }
+                        HStack(spacing: 10) {
+                            Image(systemName: action.symbolName)
+                                .font(.system(size: 14))
+                                .foregroundColor(selectedSystemAction == action ? .accentColor : .secondary)
+                                .frame(width: 22)
+                                .accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(action.displayName)
+                                    .font(.body)
+                                    .fontWeight(selectedSystemAction == action ? .semibold : .regular)
+                                    .foregroundColor(.primary)
+                                Text(action.detailText)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
                             }
+                            Spacer()
+                            if selectedSystemAction == action {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.accentColor)
+                                    .accessibilityHidden(true)
+                            }
+                        }
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
                             .background {
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(selectedOptionFill(selected: selectedSystemAction == action, colorScheme: colorScheme))
                             }
-                        }
-                        .buttonStyle(.plain)
-                        .contentShape(RoundedRectangle(cornerRadius: 8))
-                        .accessibilityAddTraits(selectedSystemAction == action ? .isSelected : [])
-                        .help(action.detailText)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                selectedSystemAction = action
+                                systemTouched = true
+                            }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityAddTraits(.isButton)
+                            .accessibilityAddTraits(selectedSystemAction == action ? .isSelected : [])
+                            .accessibilityAction {
+                                selectedSystemAction = action
+                                systemTouched = true
+                            }
+                            .help(action.detailText)
                     }
                 }
             } else {
@@ -716,17 +684,10 @@ struct CornerConfigSheet: View {
             }
             return .quickLink(name: linkName, url: linkURL, openWithBundleID: linkOpenWithBundleID)
         case .command:
-            if commandMode == 0 {
-                if shellCommandText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedShell.isEmpty {
-                    return .none
-                }
-                return .shellCommand(command: shellCommandText, shell: selectedShell)
-            } else {
-                if scriptPath.isEmpty {
-                    return .none
-                }
-                return .script(language: scriptLanguage, path: scriptPath, description: scriptDescription)
+            if scriptPath.isEmpty {
+                return .none
             }
+            return .script(language: scriptLanguage, path: scriptPath, description: scriptDescription)
         case .window:
             // Untouched default must not count: merely peeking at the tab
             // must never arm an overwrite of the stored action.
@@ -760,23 +721,12 @@ struct CornerConfigSheet: View {
         case .quickLink:
             return !linkURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .command:
-            if commandMode == 0 {
-                return !shellCommandText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !selectedShell.isEmpty
-            }
             return !scriptPath.isEmpty
         case .window:
             return windowTouched
         case .system:
             return systemTouched
         }
-    }
-
-    private var shellOptions: [String] {
-        var shells = ShellExecutor.availableShells()
-        if !selectedShell.isEmpty && !shells.contains(selectedShell) {
-            shells.append(selectedShell)
-        }
-        return shells
     }
 
     private func interpreterPath(for language: ScriptLanguage) -> String? {
@@ -817,9 +767,6 @@ struct CornerConfigSheet: View {
         linkURL = ""
         linkOpenWithBundleID = nil
         linkOpenWithName = ""
-        commandMode = 0
-        shellCommandText = ""
-        selectedShell = Self.fallbackShells[0]
         scriptLanguage = .bash
         scriptPath = ""
         scriptDescription = ""
@@ -859,16 +806,9 @@ struct CornerConfigSheet: View {
                     linkOpenWithName = bundleID
                 }
             }
-        case .shellCommand(let command, let shell):
-            clearDraft()
-            selectedCategory = .command
-            commandMode = 0
-            shellCommandText = command
-            selectedShell = shell.isEmpty ? Self.fallbackShells[0] : shell
         case .script(let language, let path, let description):
             clearDraft()
             selectedCategory = .command
-            commandMode = 1
             scriptLanguage = language
             scriptPath = path
             scriptDescription = description
@@ -898,7 +838,7 @@ struct CornerConfigSheet: View {
             initialCategory = .app
         case .quickLink:
             initialCategory = .quickLink
-        case .shellCommand, .script:
+        case .script:
             initialCategory = .command
         case .windowSnap:
             initialCategory = .window

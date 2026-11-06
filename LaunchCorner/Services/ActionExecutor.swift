@@ -12,8 +12,6 @@ class ActionExecutor {
                 launchApp(atPath: bundlePath)
             case .quickLink(_, let url, let openWithBundleID):
                 QuickLinkExecutor.open(urlString: url, openWithBundleID: openWithBundleID)
-            case .shellCommand(let command, let shell):
-                ShellExecutor.runShellCommand(command, shell: shell)
             case .script(let language, let path, _):
                 ShellExecutor.runScript(language: language, path: path)
             case .windowSnap(let position):

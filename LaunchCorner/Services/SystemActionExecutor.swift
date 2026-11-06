@@ -13,8 +13,6 @@ enum SystemActionExecutor {
             KeyPress.mediaKey(17)
         case .mediaPrevious:
             KeyPress.mediaKey(18)
-        case .toggleAppearance:
-            toggleAppearance()
         case .startScreenSaver:
             DispatchQueue.main.async {
                 NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Library/CoreServices/ScreenSaverEngine.app"))
@@ -27,12 +25,8 @@ enum SystemActionExecutor {
                                    cwd: FileManager.default.homeDirectoryForCurrentUser,
                                    label: "sleepDisplay")
             }
-        case .missionControl:
-            KeyPress.key(126, .maskControl)
         case .appExpose:
             KeyPress.key(125, .maskControl)
-        case .showDesktop:
-            KeyPress.key(103, [])
         }
     }
 
@@ -40,42 +34,6 @@ enum SystemActionExecutor {
     // Monotonic per-process counter: same-millisecond bursts can't collide.
     // (All mutations happen on systemQueue.)
     private static var shotCounter: UInt = 0
-
-    private static func toggleAppearance() {
-        // Serial FIFO: two rapid toggles can't interleave a read-modify-write race.
-        systemQueue.async {
-            // Must write the GLOBAL domain (UserDefaults.standard writes the app
-            // domain, which would only pin this app's appearance and never switch the system).
-            let isDark = (CFPreferencesCopyAppValue("AppleInterfaceStyle" as CFString, "NSGlobalDomain" as CFString) as? String) == "Dark"
-            CFPreferencesSetValue("AppleInterfaceStyleSwitchesAutomatically" as CFString, kCFBooleanFalse,
-                                  "NSGlobalDomain" as CFString, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
-            if isDark {
-                CFPreferencesSetValue("AppleInterfaceStyle" as CFString, nil,
-                                      "NSGlobalDomain" as CFString, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
-            } else {
-                CFPreferencesSetValue("AppleInterfaceStyle" as CFString, "Dark" as CFString,
-                                      "NSGlobalDomain" as CFString, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
-            }
-            CFPreferencesSynchronize("NSGlobalDomain" as CFString, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
-            DistributedNotificationCenter.default().postNotificationName(
-                NSNotification.Name("AppleInterfaceThemeChangedNotification"),
-                object: nil,
-                userInfo: nil,
-                deliverImmediately: true
-            )
-            // Verify the write landed (cfprefsd applies async); if the target
-            // style didn't stick, fall back to System Events, which always
-            // applies but prompts once for Automation access.
-            Thread.sleep(forTimeInterval: 1.0)
-            let nowDark = (CFPreferencesCopyAppValue("AppleInterfaceStyle" as CFString, "NSGlobalDomain" as CFString) as? String) == "Dark"
-            if nowDark == isDark {
-                let script = "tell application \"System Events\" to tell appearance preferences to set dark mode to \(isDark ? "false" : "true")"
-                WatchedProcess.run(path: "/usr/bin/osascript", args: ["-e", script],
-                                   cwd: FileManager.default.homeDirectoryForCurrentUser,
-                                   label: "appearance-fallback", timeout: 15)
-            }
-        }
-    }
 
     static func screenshot(kind: ScreenshotKind, destination: ScreenshotDestination, directory: String) {
         var args: [String] = []

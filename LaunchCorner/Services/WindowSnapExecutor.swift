@@ -42,10 +42,16 @@ enum WindowSnapExecutor {
             print("Snap: window is minimized, skipping")
             return false
         }
+        // Fullscreen windows live in their own Space and can't be snapped
+        // there: exit fullscreen, then snap once the window lands back.
         // No SDK constant for this attribute name; use the documented AX string.
         if isFlagSet(window, attribute: "AXFullScreen" as CFString) {
-            print("Snap: window is fullscreen, skipping")
-            return false
+            let cleared = AXUIElementSetAttributeValue(window, "AXFullScreen" as CFString, kCFBooleanFalse) == .success
+            print("Snap: exiting fullscreen (cleared: \(cleared)), retrying after settle")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+                _ = snap(position)
+            }
+            return cleared
         }
 
         let vf = ctx.visibleFrame
@@ -82,11 +88,25 @@ enum WindowSnapExecutor {
             return false
         }
 
-        func applyOnce() -> AXError {
-            // Size first: growing the window can shift its top-left on some apps.
+        // Electron/Chromium often reject resizes while enhanced UI is on;
+        // disable it for the set and restore after (Loop's fix).
+        let enhancedWasOn = setEnhancedUI(appElement, enabled: false)
+        defer {
+            if enhancedWasOn {
+                setEnhancedUI(appElement, enabled: true)
+            }
+        }
+
+        @discardableResult
+        func apply() -> AXError {
+            // Always size → position → size. Verified empirically: leading
+            // with position leaves the height too tall (422/506 vs 416.5
+            // target on this display), size-first lands exact. Trailing size
+            // re-asserts the final size after the move.
             let sizeErr = AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue)
             let posErr = AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, posValue)
-            if sizeErr == .success, posErr == .success { return .success }
+            let sizeErr2 = AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue)
+            if sizeErr2 == .success, posErr == .success { return .success }
             return sizeErr != .success ? sizeErr : posErr
         }
 
@@ -98,21 +118,51 @@ enum WindowSnapExecutor {
                 && abs(size.width - axSize.width) <= 2 && abs(size.height - axSize.height) <= 2
         }
 
-        for _ in 0..<3 {
-            let err = applyOnce()
-            // Rejecting apps (Electron without manual AX, Finder desktop, SIP windows):
-            // don't spin, fail fast.
-            if err == .cannotComplete || err == .notImplemented || err == .attributeUnsupported {
-                print("Snap: window rejected set (\(err.rawValue))")
-                return false
-            }
-            // Re-set position (size changes can drift it), then verify read-back.
-            AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, posValue)
-            if isSettled() { return true }
-            Thread.sleep(forTimeInterval: 0.05)
+        // Verify with patience: the window server applies sets asynchronously
+        // (a big shrink reads back mid-flight). Fast path first, no stall.
+        var err = apply()
+        // Rejecting apps (Finder desktop, SIP windows): don't spin, fail fast.
+        if err == .cannotComplete || err == .notImplemented || err == .attributeUnsupported {
+            print("Snap: window rejected set (\(err.rawValue))")
+            return false
         }
-        print("Snap: failed to settle window position/size")
-        return false
+        if isSettled() { return true }
+        Thread.sleep(forTimeInterval: 0.25)
+        if isSettled() { return true }
+        err = apply()
+        if err == .success {
+            Thread.sleep(forTimeInterval: 0.25)
+            if isSettled() { return true }
+        }
+        // Size-constrained windows (min/max sizes) land nearby but not exact:
+        // re-anchor the final frame inside the target instead of failing.
+        anchorInsideTarget(window: window, target: target, primaryHeight: ctx.primaryHeight)
+        return isSettled()
+    }
+
+    /// Pushes a size-constrained window's origin so the final frame sits
+    /// inside the target rect (Loop's anchored-frame correction).
+    private static func anchorInsideTarget(window: AXUIElement, target: NSRect, primaryHeight: CGFloat) {
+        guard let pos = readPoint(window, attribute: kAXPositionAttribute as CFString),
+              let size = readSize(window, attribute: kAXSizeAttribute as CFString) else { return }
+        var cocoa = NSRect(x: pos.x, y: primaryHeight - pos.y - size.height, width: size.width, height: size.height)
+        cocoa.origin.x = min(max(cocoa.origin.x, target.minX), max(target.minX, target.maxX - cocoa.width))
+        cocoa.origin.y = min(max(cocoa.origin.y, target.minY), max(target.minY, target.maxY - cocoa.height))
+        var fixed = CGPoint(x: cocoa.minX, y: primaryHeight - cocoa.maxY)
+        if let v = AXValueCreate(.cgPoint, &fixed) {
+            AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, v)
+        }
+    }
+
+    @discardableResult
+    private static func setEnhancedUI(_ appElement: AXUIElement, enabled: Bool) -> Bool {
+        var ref: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appElement, "AXEnhancedUserInterface" as CFString, &ref) == .success,
+              let current = (ref as? NSNumber)?.boolValue, current != enabled else {
+            return false
+        }
+        let err = AXUIElementSetAttributeValue(appElement, "AXEnhancedUserInterface" as CFString, enabled ? kCFBooleanTrue : kCFBooleanFalse)
+        return err == .success
     }
 
     private static func readPoint(_ window: AXUIElement, attribute: CFString) -> CGPoint? {
@@ -166,6 +216,6 @@ enum WindowSnapExecutor {
         }
         return SnapContext(pid: frontApp.processIdentifier,
                            visibleFrame: screen.visibleFrame,
-                           primaryHeight: NSScreen.screens.first?.frame.height ?? screen.frame.height)
+                           primaryHeight: NSScreen.main?.frame.height ?? NSScreen.screens.first?.frame.height ?? screen.frame.height)
     }
 }

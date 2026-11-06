@@ -5,12 +5,12 @@ Run every time these features change:
     python3 scripts/test_actions.py [--no-build]
 
 Covers: Debug build, model Codable (old-format migration, roundtrips,
-tolerant reader), shells/interpreters, live shell+script runs, QuickLink
-resolution, window snap end-to-end (needs Accessibility), appearance
-roundtrip, screenshots (needs Screen Recording), self-dismissing
-Spotlight/Mission Control triggers. Prints one line per check, exits
-non-zero on any FAIL. Lifetime SKIP = environment lacks that capability.
-Disruptive actions (lock/sleep/screensaver/live media) are NEVER triggered.
+tolerant reader, removed-case degradation), interpreters, live script runs,
+QuickLink resolution, window snap end-to-end (needs Accessibility),
+screenshots (needs Screen Recording), self-dismissing Spotlight trigger.
+Prints one line per check, exits non-zero on any FAIL. Lifetime SKIP =
+environment lacks that capability. Disruptive actions (lock/sleep/screensaver/
+live media) are NEVER triggered.
 """
 import argparse, os, re, shutil, subprocess, sys, tempfile, time
 
@@ -100,10 +100,6 @@ def main():
     check("MODEL", "harness-ran", n > 15, f"{n} checks")
 
     print("== ENV ==")
-    rc, out = harness("shells")
-    shells = [l.split(None, 1)[1] for l in out.splitlines() if l.startswith("SHELL ")]
-    check("ENV", "shells-found", len(shells) > 0, ",".join(shells))
-    check("ENV", "zsh-present", "/bin/zsh" in shells)
     interp = {}
     for lang in ["bash", "appleScript", "python", "javaScript", "typeScript", "go", "ruby", "csharp"]:
         rc, out = harness("interp", lang)
@@ -113,22 +109,6 @@ def main():
             check("ENV", f"interp-{lang}", interp[lang] != "MISSING", interp[lang])
         else:
             check("ENV", f"interp-{lang}", True if interp[lang] not in ("MISSING", "?") else None, interp[lang])
-
-    print("== SHELL-RUN ==")
-    m1 = os.path.join(TMP, "lc_marker1")
-    if os.path.exists(m1): os.remove(m1)
-    harness("runshell", "/bin/zsh", f"echo ok > {m1}")
-    check("SHELL", "echo-to-file", wait_file(m1, 10))
-    m1b = os.path.join(TMP, "lc_marker1b")
-    if os.path.exists(m1b): os.remove(m1b)
-    harness("runshell", "/bin/zsh", f"echo no > {m1b} && exit 3")
-    time.sleep(3)
-    rc, out = harness("runshell", "/bin/zsh", "true")
-    check("SHELL", "nonzero-survives", "RUNSHELL-DONE" in out and os.path.exists(m1b),
-          "exit-3 command ran through, harness responsive")
-    rc, out = harness("runshell", "/nonexistent/sh", "echo x")
-    check("SHELL", "bad-shell-guarded", "RUNSHELL-DONE" in out and "not executable" in out,
-          "refused before fork")
 
     print("== SCRIPT-RUN ==")
     scripts = {
@@ -176,26 +156,74 @@ def main():
             check("SNAP", "quarter", m.group(2) == "PASS", out.strip()[:200])
         else:
             check("SNAP", "end-to-end", None if "SKIP" in out else False, out.strip()[:200])
+        # Off-main caller: pre-fix this crashed inside AX setAttributeValue.
+        # Main thread pumps a runloop while waiting (bg work hops to main).
+        rc, out = harness("snaptest-bg", timeout=150)
+        m = re.search(r"SNAP left=(PASS|FAIL) quarter=(PASS|FAIL)", out)
+        if m:
+            check("SNAP", "bg-caller-safe", m.group(1) == "PASS" and m.group(2) == "PASS" and "SNAPBG-DONE" in out, out.strip()[:200])
+        else:
+            check("SNAP", "bg-caller-safe", None if "SKIP" in out else False, out.strip()[:200])
+
+    print("== MTC ==")
+    import glob as _glob
+    mtc = None
+    for cand in _glob.glob("/Applications/Xcode*.app/Contents/Developer/usr/lib/libMainThreadChecker.dylib"):
+        mtc = cand
+        break
+    if mtc and trusted:
+        env = dict(os.environ, DYLD_INSERT_LIBRARIES=mtc)
+        try:
+            p = subprocess.run([HARNESS_BIN, "snaptest-bg"], capture_output=True, text=True,
+                               timeout=150, cwd=REPO, env=env)
+            hit = "Main Thread Checker" in (p.stdout + p.stderr)
+            check("MTC", "no-main-thread-violation", not hit,
+                  "clean under libMainThreadChecker" if not hit else (p.stdout + p.stderr)[-500:])
+        except subprocess.TimeoutExpired:
+            check("MTC", "no-main-thread-violation", False, "TIMEOUT (possible deadlock)")
+    else:
+        check("MTC", "no-main-thread-violation", None, "no dylib or no AX trust")
+
+    print("== FUZZ ==")
+    rc, out = harness("fuzz", timeout=120)
+    m = re.search(r"FUZZ actions=(\d+) nonNone=(\d+) configs=(\d+)/(\d+)", out)
+    check("FUZZ", "no-crash-tolerant", bool(m) and rc == 0, out.strip()[:160])
+
+    print("== SCAN ==")
+    import pathlib as _pl
+    svc = _pl.Path(REPO, "LaunchCorner")
+    hits = []
+    for f in list((svc / "Services").glob("*.swift")) + list((svc / "Models").glob("*.swift")):
+        text = f.read_text()
+        for i, line in enumerate(text.splitlines(), 1):
+            s = line.strip()
+            if s.startswith("//"):
+                continue
+            if "DispatchQueue.main.sync" in s and f.name != "MainThread.swift":
+                hits.append((f.name, i, "main.sync (deadlock-prone)"))
+            if re.search(r"\bas!|\btry!", s):
+                hits.append((f.name, i, "force-unwrap"))
+    for f in (svc / "Services").glob("*.swift"):
+        if f.name in ("WatchedProcess.swift", "PermissionManager.swift"):
+            continue
+        text = f.read_text()
+        for i, line in enumerate(text.splitlines(), 1):
+            if line.strip().startswith("//"):
+                continue
+            if "Process()" in line:
+                hits.append((f.name, i, "raw Process() outside WatchedProcess"))
+    for f in (svc / "Services").glob("*.swift"):
+        if f.name == "WindowSnapExecutor.swift":
+            continue
+        text = f.read_text()
+        for i, line in enumerate(text.splitlines(), 1):
+            if line.strip().startswith("//"):
+                continue
+            if "AXUIElementSetAttributeValue" in line:
+                hits.append((f.name, i, "AX set outside snap (main-thread risk)"))
+    check("SCAN", "static-tripewires", len(hits) == 0, "; ".join(f"{a}:{b} {c}" for a, b, c in hits[:8]))
 
     print("== SYSTEM ==")
-    rc, out = harness("appear")
-    before = "Dark" if re.search(r"STYLE Dark", out) else "Light"
-    try:
-        harness("appeartoggle")
-        rc, out = harness("appear")
-        after = "Dark" if re.search(r"STYLE Dark", out) else "Light"
-        check("SYSTEM", "appearance-flips", after != before, f"{before}->{after} (global domain)")
-        harness("appeartoggle")
-        rc, out = harness("appear")
-        restored = "Dark" if re.search(r"STYLE Dark", out) else "Light"
-        check("SYSTEM", "appearance-restores", restored == before, f"back to {restored}")
-    finally:
-        rc, out = harness("appear")
-        cur = "Dark" if re.search(r"STYLE Dark", out) else "Light"
-        if cur != before:
-            harness("appeartoggle")
-            print(f"(restored theme to {before} after interrupt)", flush=True)
-
     shotdir = os.path.join(TMP, "lc_shots")
     os.makedirs(shotdir, exist_ok=True)
     for f in os.listdir(shotdir):
@@ -220,9 +248,6 @@ def main():
 
     rc, out = harness("spotkey", timeout=30)
     check("SYSTEM", "spotlight-smoke", True if "SPOT-OK" in out else (None if "SPOT-NO-AX" in out else False),
-          "posts keys, Esc-dismisses; visual confirm needed")
-    rc, out = harness("missionkey", timeout=30)
-    check("SYSTEM", "mission-smoke", True if "MISSION-OK" in out else (None if "MISSION-NO-AX" in out else False),
           "posts keys, Esc-dismisses; visual confirm needed")
     print("SYSTEM excluded (disruptive, dispatch-covered): lockScreen sleepDisplay startScreenSaver media*")
 

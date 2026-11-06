@@ -14,12 +14,6 @@ struct Harness {
 func harnessMain(_ args: [String]) {
 guard args.count >= 2 else { out("USAGE"); exit(2) }
 
-// Global-domain read: UserDefaults.standard would only see the app domain
-// and make this test vacuous.
-func globalStyle() -> String {
-    (CFPreferencesCopyAppValue("AppleInterfaceStyle" as CFString, "NSGlobalDomain" as CFString) as? String) ?? "Light"
-}
-
 switch args[1] {
 case "model":
     var n = 0
@@ -39,10 +33,10 @@ case "model":
     let cases: [CornerAction] = [
         .quickLink(name: "N", url: "https://example.com", openWithBundleID: nil),
         .quickLink(name: "", url: "shortcuts://run-shortcut?name=X", openWithBundleID: "com.apple.Safari"),
-        .shellCommand(command: "echo hi", shell: "/bin/zsh"),
+        .script(language: .appleScript, path: "/tmp/x.scpt", description: ""),
         .script(language: .python, path: "/tmp/x.py", description: "d"),
         .windowSnap(position: .bottomRight),
-        .systemAction(.missionControl),
+        .systemAction(.appExpose),
         .screenshot(kind: .window, destination: .file, directory: "~/Pictures"),
     ]
     for (i, c) in cases.enumerated() {
@@ -63,8 +57,11 @@ case "model":
     } else { t("cfg-tolerant", false) }
     // Empty payloads normalize to .none (never fire)
     t("empty-url", isNone("{\"quickLink\":{\"name\":\"\",\"url\":\"  \"}}"))
-    t("empty-cmd", isNone("{\"shellCommand\":{\"command\":\"\",\"shell\":\"/bin/zsh\"}}"))
     t("empty-script", isNone("{\"script\":{\"language\":\"python\",\"path\":\"\"}}"))
+    // Removed payloads degrade to .none (toggleAppearance/missionControl/
+    // showDesktop/shellCommand no longer exist)
+    t("gone-shell", isNone("{\"shellCommand\":{\"command\":\"echo hi\",\"shell\":\"/bin/zsh\"}}"))
+    t("gone-mission", isNone("{\"systemAction\":{\"action\":\"missionControl\"}}"))
     // Full AppConfig with mixed corners survives
     var cfg = AppConfig.default
     cfg.defaultConfig.setAction(.launchApp(bundlePath: "/Applications/Safari.app", appName: "Safari"), for: .topLeft)
@@ -77,7 +74,7 @@ case "model":
     let all: [CornerAction] = [.none,
         .launchApp(bundlePath: "/a", appName: "b"),
         .quickLink(name: "", url: "https://e.com", openWithBundleID: nil),
-        .shellCommand(command: "c", shell: "/bin/zsh"),
+        .script(language: .bash, path: "/s.sh", description: ""),
         .script(language: .go, path: "/p", description: ""),
         .windowSnap(position: .top),
         .systemAction(.lockScreen),
@@ -88,21 +85,11 @@ case "model":
         && CornerAction.quickLink(name: "", url: "", openWithBundleID: nil).isConfigured == false)
     out("MODEL-DONE \(n)")
 
-case "shells":
-    for s in ShellExecutor.availableShells() { out("SHELL \(s)") }
-
 case "interp":
     guard args.count >= 3, let lang = ScriptLanguage(rawValue: args[2]) else {
         out("INTERP BAD-LANG"); exit(2)
     }
     out("INTERP \(ShellExecutor.resolveInterpreter(lang) ?? "MISSING")")
-
-case "runshell":
-    guard args.count >= 4 else { out("RUNSHELL BAD-ARGS"); exit(2) }
-    // Headless: tests assert on files, never open Terminal windows.
-    ShellExecutor.runShellCommand(args[3...].joined(separator: " "), shell: args[2], visible: false)
-    Thread.sleep(forTimeInterval: 5.0) // async by design; let it land before exit
-    out("RUNSHELL-DONE")
 
 case "runscript":
     guard args.count >= 4, let lang = ScriptLanguage(rawValue: args[2]) else {
@@ -118,21 +105,6 @@ case "ql":
 
 case "ax":
     out("AX \(AXIsProcessTrusted() ? "YES" : "NO")")
-
-case "appear":
-    out("STYLE \(globalStyle())")
-
-case "appeartoggle":
-    let before = globalStyle()
-    SystemActionExecutor.perform(.toggleAppearance)
-    // cfprefsd applies global-domain writes asynchronously; poll for settle.
-    var after = before
-    for _ in 0..<40 {
-        Thread.sleep(forTimeInterval: 0.2)
-        after = globalStyle()
-        if after != before { break }
-    }
-    out("STYLE \(after)")
 
 case "shot":
     guard args.count >= 5,
@@ -160,18 +132,68 @@ case "spotkey":
     KeyPress.key(53, []) // Esc dismisses
     out("SPOT-OK")
 
-case "missionkey":
-    guard AXIsProcessTrusted() else { out("MISSION-NO-AX"); break }
-    KeyPress.key(126, .maskControl) // Ctrl+Up
-    Thread.sleep(forTimeInterval: 1.0)
-    KeyPress.key(53, [])
-    out("MISSION-OK")
-
 case "snaptest":
     snaptestMain()
 
+case "snaptest-bg":
+    // Same coverage with an off-main CALLER: pre-fix this crashed inside
+    // AXUIElementSetAttributeValue (AppKit resolved our own window off-main).
+    // Main pumps a runloop while waiting (bg work hops back to main).
+    let sem = DispatchSemaphore(value: 0)
+    DispatchQueue.global(qos: .userInitiated).async {
+        snaptestMain()
+        sem.signal()
+    }
+    while sem.wait(timeout: .now() + 0.2) == .timedOut {
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.2))
+    }
+    out("SNAPBG-DONE")
+
+case "fuzz":
+    fuzzMain()
+
 default:
     out("UNKNOWN-MODE"); exit(2)
+}
+
+// MARK: - Codable fuzz battery: hostile inputs must never crash,
+// and must decode to .none or a sane action (never throw out of AppConfig).
+func fuzzMain() {
+    let dec = JSONDecoder()
+    let actions = [
+        "{\"windowSnap\":null}", "{\"windowSnap\":5}", "{\"windowSnap\":[]}",
+        "{\"windowSnap\":{\"position\":null}}", "{\"windowSnap\":{\"position\":5}}",
+        "{\"windowSnap\":{\"position\":\"LEFT\"}}", "{\"windowSnap\":{\"position\":\" left\"}}",
+        "{\"systemAction\":{\"action\":0}}", "{\"systemAction\":{\"action\":true}}",
+        "{\"systemAction\":{}}", "{\"screenshot\":{}}", "{\"script\":{}}",
+        "{\"launchApp\":null}", "{\"launchApp\":{\"bundlePath\":null}}",
+        "{\"launchApp\":{\"bundlePath\":123,\"appName\":[]}}",
+        "{\"quickLink\":{\"url\":{}}}", "{\"quickLink\":[]}",
+        "{\"a\":1,\"b\":2}", "{\"none\":null,\"launchApp\":null}",
+        "[1,2]", "\"str\"", "123", "null", "true", "{}",
+        "{\"windowSnap\":{\"position\":\"left\",\"extra\":{}}}",
+        "{\"screenshot\":{\"kind\":\"full\",\"destination\":\"file\"}}",
+        String(repeating: "{\"a\":", count: 500),
+        "{\"url\":\"https://e.com/\\ud800\"}",
+        "{\"command\":\"" + String(repeating: "x", count: 100000) + "\"}",
+    ]
+    var crashed = 0, nonNone = 0
+    for s in actions {
+        let v = try? dec.decode(CornerAction.self, from: Data(s.utf8))
+        if v.map({ $0 != CornerAction.none }) ?? false { nonNone += 1 }
+        _ = try? dec.decode(AppConfig.self, from: Data(s.utf8))
+    }
+    // AppConfig-level hostility: one poisoned screen/corner must not wipe others.
+    let cfgBlobs = [
+        "{\"screenConfigs\":{\"bad\":{\"corners\":[]},\"good\":{\"corners\":{\"topLeft\":{\"windowSnap\":{\"position\":\"left\"}}}}}",
+        "{\"defaultConfig\":{\"corners\":{\"topLeft\":[1],\"topRight\":{\"systemAction\":{\"action\":\"spotlight\"}}}}",
+        "{\"defaultConfig\":null,\"dwellTime\":{},\"isActive\":\"yes\"}",
+    ]
+    var cfgOk = 0
+    for s in cfgBlobs {
+        if (try? dec.decode(AppConfig.self, from: Data(s.utf8))) != nil { cfgOk += 1 }
+    }
+    out("FUZZ actions=\(actions.count) nonNone=\(nonNone) configs=\(cfgOk)/\(cfgBlobs.count)")
 }
 
 // MARK: - snap end-to-end (launches TextEdit, snaps, verifies, cleans up)
@@ -180,13 +202,16 @@ func snaptestMain() {
     let fm = FileManager.default
     let testFile = "/tmp/lc_snap_test.txt"
     try? "snap me".write(toFile: testFile, atomically: true, encoding: .utf8)
-    let wasRunning = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.TextEdit").first != nil
-    NSWorkspace.shared.open(URL(fileURLWithPath: testFile))
+    let wasRunning = MainThread.value {
+        NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.TextEdit").first != nil
+    }
+    MainThread.value { NSWorkspace.shared.open(URL(fileURLWithPath: testFile)) }
     // wait for frontmost TextEdit (≤10s)
     var ok = false
     for _ in 0..<100 {
         Thread.sleep(forTimeInterval: 0.1)
-        if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == "com.apple.TextEdit" { ok = true; break }
+        let front = MainThread.value { NSWorkspace.shared.frontmostApplication?.bundleIdentifier }
+        if front == "com.apple.TextEdit" { ok = true; break }
     }
     guard ok else { out("SNAP FAIL-frontmost"); return }
     Thread.sleep(forTimeInterval: 0.5)
@@ -194,7 +219,7 @@ func snaptestMain() {
         guard WindowSnapExecutor.snap(pos) else { return false }
         Thread.sleep(forTimeInterval: 0.3)
         // read back focused window geometry
-        guard let app = NSWorkspace.shared.frontmostApplication else { return false }
+        guard let app = MainThread.value({ NSWorkspace.shared.frontmostApplication }) else { return false }
         let el = AXUIElementCreateApplication(app.processIdentifier)
         var ref: CFTypeRef?
         guard AXUIElementCopyAttributeValue(el, kAXFocusedWindowAttribute as CFString, &ref) == .success,
@@ -205,15 +230,20 @@ func snaptestMain() {
               AXUIElementCopyAttributeValue(win, kAXSizeAttribute as CFString, &sRef) == .success,
               let pv = pRef, let sv = sRef else { return false }
         var pt = CGPoint.zero, sz = CGSize.zero
-        AXValueGetValue(pv as! AXValue, .cgPoint, &pt)
-        AXValueGetValue(sv as! AXValue, .cgSize, &sz)
+        guard let pv = pRef, let sv = sRef,
+              CFGetTypeID(pv) == AXValueGetTypeID(), CFGetTypeID(sv) == AXValueGetTypeID() else { return false }
+        let pvv = unsafeBitCast(pv, to: AXValue.self), svv = unsafeBitCast(sv, to: AXValue.self)
+        guard AXValueGetType(pvv) == .cgPoint, AXValueGetType(svv) == .cgSize,
+              AXValueGetValue(pvv, .cgPoint, &pt), AXValueGetValue(svv, .cgSize, &sz) else { return false }
         // expected rect in AX coords
-        let mouse = NSEvent.mouseLocation
-        guard let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main else {
+        let mouse = MainThread.value { NSEvent.mouseLocation }
+        guard let screen = MainThread.value({
+            NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main
+        }) else {
             out("SNAP SKIP-NO-SCREEN"); return false
         }
         let vf = screen.visibleFrame
-        let ph = NSScreen.screens[0].frame.height
+        let ph = NSScreen.main?.frame.height ?? NSScreen.screens.first?.frame.height ?? vf.height
         func ax(_ r: NSRect) -> NSRect { NSRect(x: r.minX, y: ph - r.maxY, width: r.width, height: r.height) }
         let exp: NSRect
         switch pos {
@@ -226,7 +256,9 @@ func snaptestMain() {
     let l = check(.left), q = check(.bottomRight)
     out("SNAP left=\(l ? "PASS" : "FAIL") quarter=\(q ? "PASS" : "FAIL")")
     // cleanup: close our window via AX, quit TextEdit only if we launched it
-    if let app = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.TextEdit").first {
+    if let app = MainThread.value({
+        NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.TextEdit").first
+    }) {
         let el = AXUIElementCreateApplication(app.processIdentifier)
         var ref: CFTypeRef?
         if AXUIElementCopyAttributeValue(el, kAXFocusedWindowAttribute as CFString, &ref) == .success, let raw = ref {
@@ -244,7 +276,7 @@ func snaptestMain() {
             }
         }
         Thread.sleep(forTimeInterval: 0.5)
-        if !wasRunning { app.terminate() }
+        if !wasRunning { MainThread.value { app.terminate() } }
     }
     try? fm.removeItem(atPath: testFile)
 }
