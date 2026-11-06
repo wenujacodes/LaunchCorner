@@ -99,7 +99,8 @@ case "interp":
 
 case "runshell":
     guard args.count >= 4 else { out("RUNSHELL BAD-ARGS"); exit(2) }
-    ShellExecutor.runShellCommand(args[3...].joined(separator: " "), shell: args[2])
+    // Headless: tests assert on files, never open Terminal windows.
+    ShellExecutor.runShellCommand(args[3...].joined(separator: " "), shell: args[2], visible: false)
     Thread.sleep(forTimeInterval: 5.0) // async by design; let it land before exit
     out("RUNSHELL-DONE")
 

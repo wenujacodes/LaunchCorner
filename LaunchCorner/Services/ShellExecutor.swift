@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 
 // Runs shell commands and script files without blocking the caller.
 enum ShellExecutor {
@@ -22,18 +23,50 @@ enum ShellExecutor {
         return existing.isEmpty ? ["/bin/zsh", "/bin/bash", "/bin/sh"] : existing
     }
 
-    static func runShellCommand(_ command: String, shell: String) {
+    static func runShellCommand(_ command: String, shell: String, visible: Bool = true) {
         let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             print("Shell: empty command")
             return
         }
         let shellPath = shell.isEmpty ? "/bin/zsh" : shell
-        // Launched async: WatchedProcess never blocks, drains pipes, kills hangs.
+        guard FileManager.default.isExecutableFile(atPath: shellPath) else {
+            print("Shell: interpreter not executable: \(shellPath)")
+            return
+        }
+        if !visible {
+            // Headless (tests): classic background run.
+            DispatchQueue.global(qos: .utility).async {
+                WatchedProcess.run(path: shellPath, args: ["-c", trimmed],
+                                   cwd: FileManager.default.homeDirectoryForCurrentUser,
+                                   label: "Shell")
+            }
+            return
+        }
+        // Visible: hand a .command file to the user's default terminal app
+        // (default .command handler), so the command runs in a real window.
         DispatchQueue.global(qos: .utility).async {
-            WatchedProcess.run(path: shellPath, args: ["-c", trimmed],
-                               cwd: FileManager.default.homeDirectoryForCurrentUser,
-                               label: "Shell")
+            let stamp = UInt64(Date().timeIntervalSince1970 * 1000) % 100000
+            let fileURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("LaunchCorner-\(stamp).command")
+            // Keep-open tail: `read` exists in sh/bash/zsh/fish; other shells
+            // show its error after the command output, window still stays open.
+            let body = "#!\(shellPath)\n\(trimmed)\necho \"\"\necho \"[LaunchCorner] done — press Enter to close\"\nread lc_done\n"
+            do {
+                try body.write(to: fileURL, atomically: true, encoding: .utf8)
+                try FileManager.default.setAttributes([.posixPermissions: 0o755],
+                                                      ofItemAtPath: fileURL.path)
+            } catch {
+                print("Shell: failed to stage .command file: \(error.localizedDescription)")
+                return
+            }
+            DispatchQueue.main.async {
+                // Default handler (what the user picked for command files),
+                // so this honors their default terminal app.
+                if !NSWorkspace.shared.open(fileURL) {
+                    print("Shell: system declined to open terminal for command")
+                }
+            }
         }
     }
 

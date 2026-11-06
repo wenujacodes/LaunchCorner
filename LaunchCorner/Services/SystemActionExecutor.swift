@@ -63,6 +63,17 @@ enum SystemActionExecutor {
                 userInfo: nil,
                 deliverImmediately: true
             )
+            // Verify the write landed (cfprefsd applies async); if the target
+            // style didn't stick, fall back to System Events, which always
+            // applies but prompts once for Automation access.
+            Thread.sleep(forTimeInterval: 1.0)
+            let nowDark = (CFPreferencesCopyAppValue("AppleInterfaceStyle" as CFString, "NSGlobalDomain" as CFString) as? String) == "Dark"
+            if nowDark == isDark {
+                let script = "tell application \"System Events\" to tell appearance preferences to set dark mode to \(isDark ? "false" : "true")"
+                WatchedProcess.run(path: "/usr/bin/osascript", args: ["-e", script],
+                                   cwd: FileManager.default.homeDirectoryForCurrentUser,
+                                   label: "appearance-fallback", timeout: 15)
+            }
         }
     }
 

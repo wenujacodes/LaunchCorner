@@ -2,10 +2,7 @@ import AppKit
 import ApplicationServices
 
 // Moves the frontmost window to a half or quarter of the screen under the mouse.
-// Serialized: concurrent snaps would interleave position/size writes on the window.
 enum WindowSnapExecutor {
-    private static let snapQueue = DispatchQueue(label: "com.launchcorner.snap")
-
     private struct SnapContext {
         let pid: pid_t
         let visibleFrame: NSRect
@@ -14,18 +11,19 @@ enum WindowSnapExecutor {
 
     @discardableResult
     static func snap(_ position: SnapPosition) -> Bool {
-        // Capture AppKit context on the CALLER thread first: entering the
-        // serial queue and then hopping to main would deadlock a main-thread
-        // caller (queue waits on main, block waits on queue). Queue holds AX work only.
-        guard let ctx = MainThread.value({ captureContext() }) else {
-            return false
-        }
-        return snapQueue.sync {
-            snapLocked(position, ctx: ctx)
+        // Everything (including AX SETS) runs on main: sets targeting our own
+        // windows resolve in-process through AppKit, which traps off-main
+        // (EXC_BREAKPOINT "Must only be used from the main thread"). Main is
+        // serial, so this also serializes concurrent snaps.
+        MainThread.value {
+            snapLocked(position)
         }
     }
 
-    private static func snapLocked(_ position: SnapPosition, ctx: SnapContext) -> Bool {
+    private static func snapLocked(_ position: SnapPosition) -> Bool {
+        guard let ctx = captureContext() else {
+            return false
+        }
         let appElement = AXUIElementCreateApplication(ctx.pid)
 
         var focusedRef: CFTypeRef?

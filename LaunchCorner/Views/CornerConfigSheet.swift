@@ -133,7 +133,9 @@ struct CornerConfigSheet: View {
                 }
                 .font(.system(size: 13))
                 .foregroundColor(.red)
-                .disabled(!isDirty)
+                // Enabled whenever there is something to clear (stored action)
+                // or unsaved edits — never grayed out on a configured corner.
+                .disabled(!isDirty && initialAction == .none)
 
                 Spacer()
 
@@ -288,6 +290,7 @@ struct CornerConfigSheet: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .contentShape(RoundedRectangle(cornerRadius: 10))
                 .accessibilityAddTraits(selectedCategory == category ? .isSelected : [])
                 .help(category.title)
             }
@@ -469,6 +472,9 @@ struct CornerConfigSheet: View {
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(Color.primary.opacity(0.15), lineWidth: 1)
                         )
+                    Text("Runs visibly in your default terminal app.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             } else {
                 VStack(alignment: .leading, spacing: 4) {
@@ -499,6 +505,9 @@ struct CornerConfigSheet: View {
                         .buttonStyle(.plain)
                         .foregroundColor(.accentColor)
                     }
+                    Text("Runs in the background; output goes to the log.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Description (optional)")
@@ -571,6 +580,7 @@ struct CornerConfigSheet: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .contentShape(RoundedRectangle(cornerRadius: 10))
                     .accessibilityAddTraits(snapPosition == position ? .isSelected : [])
                     .help(position.detailText)
                 }
@@ -636,6 +646,7 @@ struct CornerConfigSheet: View {
                             }
                         }
                         .buttonStyle(.plain)
+                        .contentShape(RoundedRectangle(cornerRadius: 8))
                         .accessibilityAddTraits(selectedSystemAction == action ? .isSelected : [])
                         .help(action.detailText)
                     }

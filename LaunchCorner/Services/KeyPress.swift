@@ -13,6 +13,10 @@ enum KeyPress {
         down.flags = flags
         down.post(tap: .cghidEventTap)
 
+        // Real presses last tens of ms; instant down+up is ignored by some
+        // system shortcut recognizers.
+        Thread.sleep(forTimeInterval: 0.02)
+
         guard let up = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(virtualKey), keyDown: false) else {
             print("KeyPress: failed to create key-up event for \(virtualKey)")
             return
