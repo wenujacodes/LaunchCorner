@@ -73,13 +73,13 @@ struct PermissionView: View {
                 Text("Open System Settings")
                     .font(.body)
                     .fontWeight(.medium)
-                    .foregroundStyle(glassEnabled ? Color.primary : Color.white)
+                    .foregroundStyle(.white)
                     .padding(.horizontal, 28)
                     .padding(.vertical, 10)
                     .background {
                         if glassEnabled {
                             if #available(macOS 26, *) {
-                                Capsule().glassEffect(.regular.tint(.accentColor.opacity(0.35)), in: .capsule)
+                                Capsule().glassEffect(.regular.tint(.accentColor), in: .capsule)
                             }
                         } else {
                             RoundedRectangle(cornerRadius: 8)
