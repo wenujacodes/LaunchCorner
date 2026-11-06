@@ -66,6 +66,28 @@ extension View {
         }
     }
 
+    /// Selected-option fill for dense lists (snap grid, system rows, category
+    /// segments). Plain translucent fills — never glass-on-glass.
+    func selectedOptionFill(selected: Bool, colorScheme: ColorScheme) -> Color {
+        if selected {
+            return Color.accentColor.opacity(colorScheme == .dark ? 0.28 : 0.15)
+        }
+        return colorScheme == .dark ? Color.white.opacity(0.06) : Color.primary.opacity(0.05)
+    }
+
+    /// Detail-area container: chromeless stack on the glass canvas in glass
+    /// mode, legacy card otherwise.
+    @ViewBuilder
+    func detailChrome(glass: Bool, colorScheme: ColorScheme) -> some View {
+        if #available(macOS 26, *), glass {
+            self.padding(.top, 4)
+        } else {
+            self
+                .padding(12)
+                .cardChrome(glass: false, colorScheme: colorScheme)
+        }
+    }
+
     /// Overrides the inner (legacy) button style with glass on 26+. No-op otherwise,
     /// so call sites keep their existing `.buttonStyle(...)` for older systems.
     @ViewBuilder

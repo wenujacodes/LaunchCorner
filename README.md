@@ -39,6 +39,16 @@ LaunchCorner was created as a free, open-source utility so that anyone can trigg
 - **Runs in the Background**: Starts silently at login and hides from the Dock when closed. Open the app anytime to show its window.
 - **Open Source**: 100% free and open-source under the MIT license.
 
+### Corner Actions
+
+Each corner can trigger one of five action types (configured per corner, Liquid Glass UI on macOS 26+):
+
+- **App** — launch any application.
+- **Quick Link** — open a URL, `shortcuts://` Shortcut link, or file path, optionally with a specific app.
+- **Command** — run a shell command (pick any shell from your Mac) or a script file (Bash, AppleScript, Python, JavaScript, TypeScript, Go, Ruby, C#). Script interpreters other than the built-ins install via Homebrew (e.g. `brew install node`).
+- **Window** — snap the front window to a half or quarter of the display. Requires Accessibility access (already required by the app).
+- **System** — Spotlight, play/pause/next/previous track, toggle light/dark, screen saver, lock screen, sleep display, Mission Control, Application Windows, Show Desktop, plus screenshots (fullscreen/selection/window → file or clipboard). Keyboard-based actions require Accessibility access; screenshots require Screen Recording access on first use.
+
 ---
 
 ## Installation

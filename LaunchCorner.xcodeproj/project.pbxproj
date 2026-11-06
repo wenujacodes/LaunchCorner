@@ -21,6 +21,13 @@
 		B90000000000000000000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90000000000000000000000 /* SettingsView.swift */; };
 		BA0000000000000000000001 /* PermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA0000000000000000000000 /* PermissionView.swift */; };
 		C10000000000000000000001 /* GlassSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000000 /* GlassSupport.swift */; };
+		C20000000000000000000001 /* KeyPress.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000000 /* KeyPress.swift */; };
+		C30000000000000000000001 /* QuickLinkExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000000 /* QuickLinkExecutor.swift */; };
+		C40000000000000000000001 /* ShellExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C40000000000000000000000 /* ShellExecutor.swift */; };
+		C50000000000000000000001 /* WindowSnapExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C50000000000000000000000 /* WindowSnapExecutor.swift */; };
+		C60000000000000000000001 /* SystemActionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60000000000000000000000 /* SystemActionExecutor.swift */; };
+		C70000000000000000000001 /* MainThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000000 /* MainThread.swift */; };
+		C80000000000000000000001 /* WatchedProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = C80000000000000000000000 /* WatchedProcess.swift */; };
 		1C0000000000000000000001 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 1C0000000000000000000000 /* AppIcon.icon */; };
 		BB0000000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB0000000000000000000000 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -40,6 +47,13 @@
 		B90000000000000000000000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		BA0000000000000000000000 /* PermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionView.swift; sourceTree = "<group>"; };
 		C10000000000000000000000 /* GlassSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassSupport.swift; sourceTree = "<group>"; };
+		C20000000000000000000000 /* KeyPress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyPress.swift; sourceTree = "<group>"; };
+		C30000000000000000000000 /* QuickLinkExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickLinkExecutor.swift; sourceTree = "<group>"; };
+		C40000000000000000000000 /* ShellExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellExecutor.swift; sourceTree = "<group>"; };
+		C50000000000000000000000 /* WindowSnapExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSnapExecutor.swift; sourceTree = "<group>"; };
+		C60000000000000000000000 /* SystemActionExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemActionExecutor.swift; sourceTree = "<group>"; };
+		C70000000000000000000000 /* MainThread.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainThread.swift; sourceTree = "<group>"; };
+		C80000000000000000000000 /* WatchedProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedProcess.swift; sourceTree = "<group>"; };
 		1C0000000000000000000000 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		BB0000000000000000000000 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BC0000000000000000000000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -97,6 +111,13 @@
 				B40000000000000000000000 /* PermissionManager.swift */,
 				B50000000000000000000000 /* ConfigStore.swift */,
 				B52000000000000000000000 /* UpdateManager.swift */,
+				C20000000000000000000000 /* KeyPress.swift */,
+				C30000000000000000000000 /* QuickLinkExecutor.swift */,
+				C40000000000000000000000 /* ShellExecutor.swift */,
+				C50000000000000000000000 /* WindowSnapExecutor.swift */,
+				C60000000000000000000000 /* SystemActionExecutor.swift */,
+				C70000000000000000000000 /* MainThread.swift */,
+				C80000000000000000000000 /* WatchedProcess.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -211,6 +232,13 @@
 				B90000000000000000000001 /* SettingsView.swift in Sources */,
 				BA0000000000000000000001 /* PermissionView.swift in Sources */,
 				C10000000000000000000001 /* GlassSupport.swift in Sources */,
+				C20000000000000000000001 /* KeyPress.swift in Sources */,
+				C30000000000000000000001 /* QuickLinkExecutor.swift in Sources */,
+				C40000000000000000000001 /* ShellExecutor.swift in Sources */,
+				C50000000000000000000001 /* WindowSnapExecutor.swift in Sources */,
+				C60000000000000000000001 /* SystemActionExecutor.swift in Sources */,
+				C70000000000000000000001 /* MainThread.swift in Sources */,
+				C80000000000000000000001 /* WatchedProcess.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

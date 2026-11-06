@@ -22,6 +22,7 @@ class ConfigStore: ObservableObject {
     }
     
     private let userDefaultsKey = "LaunchCornerAppConfig"
+    private let corruptBackupKey = "LaunchCornerAppConfig.corruptBackup"
     private let launchAtLoginDefaultKey = "LaunchCornerLaunchAtLoginDefaultApplied"
     
     init() {
@@ -31,11 +32,18 @@ class ConfigStore: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: userDefaultsKey),
            let decoded = try? JSONDecoder().decode(AppConfig.self, from: data) {
             self.config = decoded
-        } else if let oldData = UserDefaults.standard.data(forKey: "NookAppConfig"),
-                  let decoded = try? JSONDecoder().decode(AppConfig.self, from: oldData) {
-            self.config = decoded
         } else {
-            self.config = .default
+            // Unparseable primary blob: stash it for forensics instead of
+            // silently losing it (e.g. hand-edited or downgraded configs).
+            if let data = UserDefaults.standard.data(forKey: userDefaultsKey) {
+                UserDefaults.standard.set(data, forKey: corruptBackupKey)
+            }
+            if let oldData = UserDefaults.standard.data(forKey: "NookAppConfig"),
+                      let decoded = try? JSONDecoder().decode(AppConfig.self, from: oldData) {
+                self.config = decoded
+            } else {
+                self.config = .default
+            }
         }
         
         // Launch at Login is on by default for new installs. Applied once, so turning it off sticks.
@@ -73,6 +81,8 @@ class ConfigStore: ObservableObject {
     func save() {
         if let encoded = try? JSONEncoder().encode(config) {
             UserDefaults.standard.set(encoded, forKey: userDefaultsKey)
+            // A good save retires any stale forensics backup.
+            UserDefaults.standard.removeObject(forKey: corruptBackupKey)
         }
     }
     

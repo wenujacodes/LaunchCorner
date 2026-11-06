@@ -102,7 +102,9 @@ struct CornerButton: View {
                             Circle()
                                 .stroke(
                                     cornerAction.isConfigured ? Color.accentColor : (colorScheme == .dark ? Color.white.opacity(0.4) : Color.black.opacity(0.3)),
-                                    style: StrokeStyle(lineWidth: 1.5, dash: cornerAction.isConfigured ? [] : [4])
+                                    // 16 × (4.25 + 4) = 132 ≈ 2π×21: divides the circumference
+                                    // evenly so the seam dash matches the rest.
+                                    style: StrokeStyle(lineWidth: 1.5, dash: cornerAction.isConfigured ? [] : [4.25, 4])
                                 )
                         )
                 }
@@ -126,6 +128,13 @@ struct CornerButton: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
+                .accessibilityHidden(true)
+        } else if cornerAction != .none {
+            Image(systemName: cornerAction.symbolName)
+                .font(.system(size: 14, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundColor(isHovering ? .accentColor : plusIdleColor)
+                .animation(.easeInOut(duration: 0.2), value: isHovering)
                 .accessibilityHidden(true)
         } else {
             Image(systemName: "plus")
