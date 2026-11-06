@@ -64,7 +64,7 @@ struct SettingsView: View {
                 Spacer()
             }
             .padding(.horizontal, 28)
-            .padding(.top, 4)
+            .padding(.top, 12)
             .padding(.bottom, 16)
             .opacity(settingsHeaderCollapsed ? 0 : 1)
             .frame(height: settingsHeaderCollapsed ? 0 : nil, alignment: .top)
@@ -95,6 +95,7 @@ struct SettingsView: View {
                                 Spacer()
                                 Toggle("", isOn: enableLaunchCornerBinding)
                                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                                    .tint(.accentColor)
                                     .controlSize(.small)
                                     .labelsHidden()
                             }
@@ -107,6 +108,7 @@ struct SettingsView: View {
                                 Spacer()
                                 Toggle("", isOn: $configStore.isLaunchAtLoginEnabled)
                                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                                    .tint(.accentColor)
                                     .controlSize(.small)
                                     .labelsHidden()
                             }
@@ -134,6 +136,7 @@ struct SettingsView: View {
                                 Spacer()
                                 Toggle("", isOn: liquidGlassBinding)
                                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                                    .tint(.accentColor)
                                     .controlSize(.small)
                                     .labelsHidden()
                                     .help("Use the Liquid Glass look. Turn off to keep the classic appearance.")
@@ -184,6 +187,7 @@ struct SettingsView: View {
                                 Spacer()
                                 Toggle("", isOn: autoCheckUpdatesBinding)
                                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                                    .tint(.accentColor)
                                     .controlSize(.small)
                                     .labelsHidden()
                             }
