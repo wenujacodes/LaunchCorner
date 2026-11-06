@@ -98,6 +98,7 @@ struct MainView: View {
                     .padding(.top, 8)
             }
         }
+        .background(GlassWindowConfigurator(enabled: glassEnabled))
         .frame(width: 660, height: 540)
         .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
         .onAppear {

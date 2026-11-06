@@ -92,6 +92,8 @@ struct CornerConfigSheet: View {
                 Text("\(corner.displayName) Configuration")
                     .font(.title2)
                     .fontWeight(.semibold)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                 Spacer()
             }
             .padding(.bottom, 12)
@@ -121,7 +123,7 @@ struct CornerConfigSheet: View {
                 .padding(.bottom, 12)
 
             // Footer
-            HStack(spacing: 8) {
+            HStack(spacing: 12) {
                 Button("Clear") {
                     clearDraft()
                     clearArmed = true
@@ -139,6 +141,7 @@ struct CornerConfigSheet: View {
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(.cancelAction)
+                .frame(minWidth: 64)
 
                 Button("Save") {
                     saveAction()
@@ -153,6 +156,7 @@ struct CornerConfigSheet: View {
         .padding(.horizontal, 24)
         .padding(.top, 20)
         .padding(.bottom, 16)
+        .background(GlassWindowConfigurator(enabled: glassEnabled))
         .frame(width: 520, height: 600)
         .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
         .onAppear {
@@ -188,6 +192,7 @@ struct CornerConfigSheet: View {
                 Text(previewedAction.isConfigured ? previewedAction.displayName : "Nothing chosen")
                     .font(.headline)
                     .lineLimit(1)
+                    .truncationMode(.tail)
                 if previewedAction.isConfigured {
                     Text(previewedAction.detailText)
                         .font(.caption)
@@ -199,6 +204,7 @@ struct CornerConfigSheet: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
+                        .truncationMode(.tail)
                 }
             }
             Spacer()
@@ -242,15 +248,22 @@ struct CornerConfigSheet: View {
 
     // MARK: - Category selector
 
+    @ViewBuilder
     private var categorySelector: some View {
-        segmentRow
+        if glassEnabled {
+            segmentRow
+                .padding(3)
+                .cardChrome(glass: true, colorScheme: colorScheme)
+        } else {
+            segmentRow
+        }
     }
 
     private var segmentRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 2) {
             ForEach(ConfigCategory.allCases) { category in
                 // Explicit tap target (not Button): the whole segment rect must respond.
-                VStack(spacing: 4) {
+                VStack(spacing: 3) {
                     Image(systemName: category.symbolName)
                         .font(.system(size: 16))
                         .accessibilityHidden(true)
@@ -261,11 +274,19 @@ struct CornerConfigSheet: View {
                         .minimumScaleFactor(0.85)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .foregroundColor(selectedCategory == category ? .accentColor : .primary)
+                .padding(.vertical, 7)
+                .padding(.horizontal, 2)
+                .foregroundColor(segmentForeground(for: category))
                 .background {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(selectedOptionFill(selected: selectedCategory == category, colorScheme: colorScheme))
+                    if glassEnabled {
+                        if #available(macOS 26, *), selectedCategory == category {
+                            RoundedRectangle(cornerRadius: 9)
+                                .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.30 : 0.16))
+                        }
+                    } else {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(selectedOptionFill(selected: selectedCategory == category, colorScheme: colorScheme))
+                    }
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { selectedCategory = category }
@@ -276,6 +297,14 @@ struct CornerConfigSheet: View {
                 .help(category.title)
             }
         }
+    }
+
+    private func segmentForeground(for category: ConfigCategory) -> Color {
+        guard selectedCategory == category else {
+            // Unselected recedes on glass; legacy keeps full primary.
+            return glassEnabled ? .secondary : .primary
+        }
+        return .accentColor
     }
 
     // MARK: - Detail area
@@ -299,7 +328,7 @@ struct CornerConfigSheet: View {
     // MARK: App detail (original behavior)
 
     private var appDetail: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             if !selectedAppName.isEmpty {
                 HStack(spacing: 12) {
                     if let icon = selectedAppIcon {
@@ -317,6 +346,8 @@ struct CornerConfigSheet: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(selectedAppName)
                             .font(.headline)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
                         Text(selectedAppPath)
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -325,10 +356,10 @@ struct CornerConfigSheet: View {
                     }
                     Spacer()
                 }
-                .padding()
+                .padding(12)
                 .cardChrome(glass: glassEnabled, colorScheme: colorScheme, darkFill: 0.06, darkStroke: 0.1)
             } else {
-                VStack(spacing: 10) {
+                VStack(spacing: 8) {
                     Image(systemName: "square.grid.2x2")
                         .font(.system(size: 28))
                         .foregroundColor(.secondary)
@@ -336,9 +367,10 @@ struct CornerConfigSheet: View {
                     Text("Nothing chosen")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
+                .padding(.vertical, 12)
                 .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
             }
 
@@ -386,11 +418,12 @@ struct CornerConfigSheet: View {
                 Text("Open with (optional)")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                HStack {
+                HStack(spacing: 8) {
                     Text(linkOpenWithName.isEmpty ? "Default app" : linkOpenWithName)
                         .font(.body)
                         .foregroundColor(linkOpenWithName.isEmpty ? .secondary : .primary)
                         .lineLimit(1)
+                        .truncationMode(.tail)
                     Spacer()
                     Button(linkOpenWithName.isEmpty ? "Choose..." : "Change...") {
                         selectOpenWithApp()
@@ -406,7 +439,7 @@ struct CornerConfigSheet: View {
                         .foregroundColor(.red)
                     }
                 }
-                .padding(10)
+                .padding(12)
             }
         }
         .detailChrome(glass: glassEnabled, colorScheme: colorScheme)
@@ -431,7 +464,7 @@ struct CornerConfigSheet: View {
                 Text("Script file")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                HStack {
+                HStack(spacing: 8) {
                     Text(scriptPath.isEmpty ? "No file chosen" : scriptPath)
                         .font(.caption)
                         .foregroundColor(scriptPath.isEmpty ? .secondary : .primary)
@@ -481,6 +514,8 @@ struct CornerConfigSheet: View {
                 Text("Not installed — \(interpreterHint(for: language))")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
             }
         }
     }
@@ -495,11 +530,14 @@ struct CornerConfigSheet: View {
                         Image(systemName: position.symbolName)
                             .font(.system(size: 16))
                             .foregroundColor(snapPosition == position ? .accentColor : .secondary)
+                            .frame(width: 20, alignment: .center)
                             .accessibilityHidden(true)
                         Text(position.displayName)
                             .font(.body)
                             .fontWeight(snapPosition == position ? .semibold : .regular)
                             .foregroundColor(.primary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
                         Spacer()
                     }
                     .padding(10)
@@ -530,6 +568,7 @@ struct CornerConfigSheet: View {
             Text(snapPosition.detailText)
                 .font(.caption)
                 .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 2)
         }
         .detailChrome(glass: glassEnabled, colorScheme: colorScheme)
@@ -539,12 +578,8 @@ struct CornerConfigSheet: View {
 
     private var systemDetail: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Picker("Type", selection: $systemMode) {
-                Text("System Action").tag(0)
-                Text("Screenshot").tag(1)
-            }
-            .pickerStyle(.segmented)
-            .onChange(of: systemMode) { _, _ in systemTouched = true }
+            GlassSegmentedControl(labels: ["System Action", "Screenshot"], values: [0, 1], selection: $systemMode)
+                .onChange(of: systemMode) { _, _ in systemTouched = true }
 
             if systemMode == 0 {
                 VStack(spacing: 2) {
@@ -557,22 +592,27 @@ struct CornerConfigSheet: View {
                             Image(systemName: action.symbolName)
                                 .font(.system(size: 14))
                                 .foregroundColor(selectedSystemAction == action ? .accentColor : .secondary)
-                                .frame(width: 22)
+                                .frame(width: 22, height: 22, alignment: .center)
                                 .accessibilityHidden(true)
-                            VStack(alignment: .leading, spacing: 1) {
+                            VStack(alignment: .leading, spacing: 2) {
                                 Text(action.displayName)
                                     .font(.body)
                                     .fontWeight(selectedSystemAction == action ? .semibold : .regular)
                                     .foregroundColor(.primary)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
                                 Text(action.detailText)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                     .lineLimit(1)
+                                    .truncationMode(.tail)
                             }
                             Spacer()
                             if selectedSystemAction == action {
                                 Image(systemName: "checkmark")
+                                    .font(.system(size: 13, weight: .semibold))
                                     .foregroundColor(.accentColor)
+                                    .frame(width: 16, alignment: .trailing)
                                     .accessibilityHidden(true)
                             }
                         }
@@ -603,25 +643,15 @@ struct CornerConfigSheet: View {
                         Text("Kind")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Picker("Kind", selection: $screenshotKind) {
-                            ForEach(ScreenshotKind.allCases) { kind in
-                                Text(kind.displayName).tag(kind)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .onChange(of: screenshotKind) { _, _ in systemTouched = true }
+                        GlassSegmentedControl(labels: ScreenshotKind.allCases.map(\.displayName), values: ScreenshotKind.allCases, selection: $screenshotKind)
+                            .onChange(of: screenshotKind) { _, _ in systemTouched = true }
                     }
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Destination")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Picker("Destination", selection: $screenshotDestination) {
-                            ForEach(ScreenshotDestination.allCases) { destination in
-                                Text(destination.displayName).tag(destination)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .onChange(of: screenshotDestination) { _, _ in systemTouched = true }
+                        GlassSegmentedControl(labels: ScreenshotDestination.allCases.map(\.displayName), values: ScreenshotDestination.allCases, selection: $screenshotDestination)
+                            .onChange(of: screenshotDestination) { _, _ in systemTouched = true }
                         Text("Requires Screen Recording access (asked on first capture).")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -631,7 +661,7 @@ struct CornerConfigSheet: View {
                             Text("Directory")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            HStack {
+                            HStack(spacing: 8) {
                                 Text(screenshotDirectory)
                                     .font(.caption)
                                     .foregroundColor(.primary)

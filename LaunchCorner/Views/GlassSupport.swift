@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// Liquid Glass (macOS 26+) helpers.
 ///
@@ -75,13 +76,13 @@ extension View {
         return colorScheme == .dark ? Color.white.opacity(0.06) : Color.primary.opacity(0.05)
     }
 
-    /// Detail-area container: always the flat legacy card. Liquid Glass lives
-    /// only in the App option, nowhere else in this sheet.
+    /// Detail-area container: glass card in glass mode, flat legacy card
+    /// otherwise. Controls inside stay plain fills — no glass-on-glass.
     @ViewBuilder
     func detailChrome(glass: Bool, colorScheme: ColorScheme) -> some View {
         self
             .padding(12)
-            .cardChrome(glass: false, colorScheme: colorScheme)
+            .cardChrome(glass: glass, colorScheme: colorScheme)
     }
 
     /// Overrides the inner (legacy) button style with glass on 26+. No-op otherwise,
@@ -96,6 +97,55 @@ extension View {
             }
         } else {
             self
+        }
+    }
+}
+
+/// Makes the hosting window transparent when glass is on so materials and
+/// Liquid Glass sample the real wallpaper (over an opaque window they
+/// flatten to dull gray with dark edges). Reverts when glass is off.
+struct GlassWindowConfigurator: NSViewRepresentable {
+    let enabled: Bool
+
+    func makeNSView(context: Context) -> GlassWindowTuner {
+        GlassWindowTuner(enabled: enabled)
+    }
+
+    func updateNSView(_ view: GlassWindowTuner, context: Context) {
+        view.enabled = enabled
+        view.tune()
+    }
+}
+
+final class GlassWindowTuner: NSView {
+    var enabled: Bool
+
+    init(enabled: Bool) {
+        self.enabled = enabled
+        super.init(frame: .zero)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        tune()
+    }
+
+    func tune() {
+        guard let window else { return }
+        if enabled {
+            window.isOpaque = false
+            window.backgroundColor = .clear
+            window.titlebarAppearsTransparent = true
+            window.hasShadow = true
+        } else {
+            window.isOpaque = true
+            window.backgroundColor = .windowBackgroundColor
+            window.titlebarAppearsTransparent = false
         }
     }
 }
