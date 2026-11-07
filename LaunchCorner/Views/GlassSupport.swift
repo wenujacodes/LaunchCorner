@@ -138,9 +138,11 @@ final class GlassWindowTuner: NSView {
     func tune() {
         guard let window else { return }
         if enabled {
+            // Transparent content so glass samples wallpaper — but the
+            // titlebar stays opaque: a glass titlebar has no drag region.
             window.isOpaque = false
             window.backgroundColor = .clear
-            window.titlebarAppearsTransparent = true
+            window.titlebarAppearsTransparent = false
             window.hasShadow = true
         } else {
             window.isOpaque = true
