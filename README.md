@@ -55,7 +55,7 @@ Each corner triggers one of five categories (configured per corner in the sheet 
 - **Quick Link** — open a URL, `shortcuts://` Shortcut link, or file path, optionally with a specific app.
 - **Script** — run a script file (Bash, AppleScript, Python, JavaScript, TypeScript, Go, Ruby, C#). Missing interpreters are flagged in the sheet with install hints (see below).
 - **Window** — snap the front window to Top / Bottom / Left / Right halves or any screen quarter. Requires Accessibility access (already required by the app).
-- **System** — Spotlight, play/pause/next/previous track, screen saver, lock screen, sleep display, Application Windows, plus screenshots (Fullscreen / Selection / Window → file or clipboard). Keyboard-based actions require Accessibility access; screenshots require Screen Recording access on first capture.
+- **System** — Spotlight, play/pause/next/previous track, screen saver, lock screen, sleep display + full sleep, log out / restart / shut down (confirm first), eject all disks (confirm first), empty Trash (confirm first, irreversible) / open Trash, hide other apps, quit all / quit-all-except-frontmost / restart frontmost app (all confirm first), toggles (hidden files, mute, Stage Manager, system appearance), plus screenshots (Fullscreen / Selection / Window → file or clipboard). Keyboard-based actions require Accessibility access; screenshots require Screen Recording access on first capture.
 
 > **Tip**: set the matching macOS system corner to — (*System Settings → Desktop & Dock → Hot Corners…*) so both actions don't fire at once. The app reminds you the first time you configure a corner.
 

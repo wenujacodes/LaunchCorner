@@ -199,8 +199,11 @@ enum SnapPosition: String, Codable, CaseIterable, Identifiable {
 
 enum SystemAction: String, Codable, CaseIterable, Identifiable {
     case spotlight, mediaPlayPause, mediaNext, mediaPrevious
-    case startScreenSaver, lockScreen, sleepDisplay
-    case appExpose
+    case startScreenSaver, lockScreen, sleepDisplay, sleepSystem
+    case logOut, restart, shutDown
+    case ejectAllDisks, emptyTrash, openTrash
+    case hideOtherApps, quitAllApps, quitAllExceptFrontmost, restartFrontmostApp
+    case toggleHiddenFiles, toggleMute, toggleStageManager, toggleAppearance
     var id: String { rawValue }
 
     var displayName: String {
@@ -212,7 +215,21 @@ enum SystemAction: String, Codable, CaseIterable, Identifiable {
         case .startScreenSaver: return "Start Screen Saver"
         case .lockScreen: return "Lock Screen"
         case .sleepDisplay: return "Sleep Display"
-        case .appExpose: return "Application Windows"
+        case .sleepSystem: return "Sleep"
+        case .logOut: return "Log Out"
+        case .restart: return "Restart"
+        case .shutDown: return "Shut Down"
+        case .ejectAllDisks: return "Eject All Disks"
+        case .emptyTrash: return "Empty Trash"
+        case .openTrash: return "Open Trash"
+        case .hideOtherApps: return "Hide All Apps Except Frontmost"
+        case .quitAllApps: return "Quit All Apps"
+        case .quitAllExceptFrontmost: return "Quit All Apps Except Frontmost"
+        case .restartFrontmostApp: return "Restart Frontmost App"
+        case .toggleHiddenFiles: return "Toggle Hidden Files"
+        case .toggleMute: return "Toggle Mute"
+        case .toggleStageManager: return "Toggle Stage Manager"
+        case .toggleAppearance: return "Toggle System Appearance"
         }
     }
 
@@ -225,7 +242,21 @@ enum SystemAction: String, Codable, CaseIterable, Identifiable {
         case .startScreenSaver: return "Starts the screen saver"
         case .lockScreen: return "Locks the screen (⌃⌘Q)"
         case .sleepDisplay: return "Puts displays to sleep immediately"
-        case .appExpose: return "Shows all windows of the front app (⌃↓)"
+        case .sleepSystem: return "Puts the whole Mac to sleep"
+        case .logOut: return "Logs out (shows confirmation)"
+        case .restart: return "Restarts the Mac (shows confirmation)"
+        case .shutDown: return "Shuts down the Mac (shows confirmation)"
+        case .ejectAllDisks: return "Ejects all external disks"
+        case .emptyTrash: return "Permanently deletes everything in Trash"
+        case .openTrash: return "Opens the Trash in Finder"
+        case .hideOtherApps: return "Hides every app except the frontmost"
+        case .quitAllApps: return "Gracefully quits all apps (Finder stays)"
+        case .quitAllExceptFrontmost: return "Quits everything but the front app"
+        case .restartFrontmostApp: return "Quits and relaunches the front app"
+        case .toggleHiddenFiles: return "Shows/hides hidden files (restarts Finder)"
+        case .toggleMute: return "Toggles system output mute"
+        case .toggleStageManager: return "Toggles Stage Manager (macOS 13+)"
+        case .toggleAppearance: return "Toggles Light/Dark appearance"
         }
     }
 
@@ -238,7 +269,21 @@ enum SystemAction: String, Codable, CaseIterable, Identifiable {
         case .startScreenSaver: return "clock.fill"
         case .lockScreen: return "lock.fill"
         case .sleepDisplay: return "moon.fill"
-        case .appExpose: return "square.on.square"
+        case .sleepSystem: return "moon.zzz.fill"
+        case .logOut: return "rectangle.portrait.and.arrow.right"
+        case .restart: return "arrow.clockwise"
+        case .shutDown: return "power"
+        case .ejectAllDisks: return "eject.fill"
+        case .emptyTrash: return "trash"
+        case .openTrash: return "trash.fill"
+        case .hideOtherApps: return "eye.slash.fill"
+        case .quitAllApps: return "xmark.circle.fill"
+        case .quitAllExceptFrontmost: return "xmark.square.fill"
+        case .restartFrontmostApp: return "arrow.clockwise.circle"
+        case .toggleHiddenFiles: return "eye.fill"
+        case .toggleMute: return "speaker.slash.fill"
+        case .toggleStageManager: return "macwindow"
+        case .toggleAppearance: return "circle.lefthalf.filled"
         }
     }
 }

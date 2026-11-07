@@ -84,7 +84,10 @@ def main():
                          capture_output=True, text=True).stdout.strip()
     rc, out = run(["xcrun", "swiftc"] + HARNESS_SRC + ["-o", HARNESS_BIN,
                    "-sdk", sdk, "-framework", "AppKit",
-                   "-framework", "ApplicationServices"], timeout=300)
+                   "-framework", "ApplicationServices",
+                   "-framework", "CoreServices",
+                   "-framework", "CoreAudio",
+                   "-framework", "Carbon"], timeout=300)
     check("HARNESS", "compile", rc == 0, out.strip()[:300])
     if rc != 0:
         return finish()
@@ -250,7 +253,7 @@ def main():
     rc, out = harness("spotkey", timeout=30)
     check("SYSTEM", "spotlight-smoke", True if "SPOT-OK" in out else (None if "SPOT-NO-AX" in out else False),
           "posts keys, Esc-dismisses; visual confirm needed")
-    print("SYSTEM excluded (disruptive, dispatch-covered): lockScreen sleepDisplay startScreenSaver media*")
+    print("SYSTEM excluded (disruptive, dispatch-covered): lockScreen sleepDisplay sleepSystem logOut restart shutDown startScreenSaver media* ejectAllDisks emptyTrash openTrash hideOtherApps quitAll* restartFrontmostApp toggle*")
 
     return finish()
 

@@ -36,13 +36,20 @@ case "model":
         .script(language: .appleScript, path: "/tmp/x.scpt", description: ""),
         .script(language: .python, path: "/tmp/x.py", description: "d"),
         .windowSnap(position: .bottomRight),
-        .systemAction(.appExpose),
+        .systemAction(.sleepSystem),
         .screenshot(kind: .window, destination: .file, directory: "~/Pictures"),
     ]
     for (i, c) in cases.enumerated() {
         if let d = try? enc.encode(c), let back = try? dec.decode(CornerAction.self, from: d) {
             t("roundtrip-\(i)", back == c, c.displayName)
         } else { t("roundtrip-\(i)", false, c.displayName) }
+    }
+    // Every SystemAction round-trips (new cases included)
+    for a in SystemAction.allCases {
+        let c = CornerAction.systemAction(a)
+        if let d = try? enc.encode(c), let back = try? dec.decode(CornerAction.self, from: d) {
+            t("sys-\(a.rawValue)", back == c, c.displayName)
+        } else { t("sys-\(a.rawValue)", false, a.rawValue) }
     }
     // Corrupt nested enums must degrade to .none, never fabricate an action
     t("bad-snap", isNone("{\"windowSnap\":{\"position\":\"diagonal\"}}"))
@@ -59,9 +66,11 @@ case "model":
     t("empty-url", isNone("{\"quickLink\":{\"name\":\"\",\"url\":\"  \"}}"))
     t("empty-script", isNone("{\"script\":{\"language\":\"python\",\"path\":\"\"}}"))
     // Removed payloads degrade to .none (toggleAppearance/missionControl/
-    // showDesktop/shellCommand no longer exist)
+    // showDesktop/shellCommand/toggleBluetooth/appExpose no longer exist)
     t("gone-shell", isNone("{\"shellCommand\":{\"command\":\"echo hi\",\"shell\":\"/bin/zsh\"}}"))
     t("gone-mission", isNone("{\"systemAction\":{\"action\":\"missionControl\"}}"))
+    t("gone-bluetooth", isNone("{\"systemAction\":{\"action\":\"toggleBluetooth\"}}"))
+    t("gone-appexpose", isNone("{\"systemAction\":{\"action\":\"appExpose\"}}"))
     // Full AppConfig with mixed corners survives
     var cfg = AppConfig.default
     cfg.defaultConfig.setAction(.launchApp(bundlePath: "/Applications/Safari.app", appName: "Safari"), for: .topLeft)
@@ -80,6 +89,12 @@ case "model":
         .systemAction(.lockScreen),
         .screenshot(kind: .full, destination: .clipboard, directory: "~/Pictures")]
     t("strings", all.allSatisfy { !$0.displayName.isEmpty && !$0.symbolName.isEmpty })
+    t("sys-strings", SystemAction.allCases.allSatisfy {
+        !$0.displayName.isEmpty && !$0.detailText.isEmpty && !$0.symbolName.isEmpty
+    })
+    // Removed actions stay gone (not resurrected, not in allCases)
+    t("gone-cases", !SystemAction.allCases.map(\.rawValue).contains("toggleBluetooth")
+        && !SystemAction.allCases.map(\.rawValue).contains("appExpose"))
     t("configured", CornerAction.none.isConfigured == false
         && CornerAction.windowSnap(position: .left).isConfigured
         && CornerAction.quickLink(name: "", url: "", openWithBundleID: nil).isConfigured == false)
