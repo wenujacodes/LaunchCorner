@@ -119,7 +119,6 @@ struct GlassWindowConfigurator: NSViewRepresentable {
 
 final class GlassWindowTuner: NSView {
     var enabled: Bool
-    private var appliedFullSize = false
 
     init(enabled: Bool) {
         self.enabled = enabled
@@ -135,35 +134,19 @@ final class GlassWindowTuner: NSView {
         super.viewDidMoveToWindow()
         tune()
     }
+
     func tune() {
+        // Transparency only — window chrome is scene-owned (hiddenTitleBar
+        // on 26+). Never mutates styleMask here: fighting SwiftUI's window
+        // controller corrupts traffic-light rendering.
         guard let window else { return }
-        // Sheets keep system chrome; only top-level titled windows change.
-        let isMainWindow = window.parent == nil && window.styleMask.contains(.titled)
-        if enabled, isMainWindow {
-            // Solid black custom bar (drawn in content): hide the system
-            // titlebar, which on Tahoe is Liquid Glass by design.
-            var mask = window.styleMask
-            mask.insert(.fullSizeContentView)
-            window.styleMask = mask
-            window.titlebarAppearsTransparent = true
-            window.titleVisibility = .hidden
-            window.title = ""
+        if enabled {
             window.isOpaque = false
             window.backgroundColor = .clear
             window.hasShadow = true
-            appliedFullSize = true
         } else {
-            if appliedFullSize {
-                var mask = window.styleMask
-                mask.remove(.fullSizeContentView)
-                window.styleMask = mask
-                appliedFullSize = false
-            }
-            window.titlebarAppearsTransparent = false
-            window.titleVisibility = .visible
-            window.title = "LaunchCorner"
-            window.isOpaque = !enabled
-            window.backgroundColor = enabled ? .clear : .windowBackgroundColor
+            window.isOpaque = true
+            window.backgroundColor = .windowBackgroundColor
         }
     }
 }

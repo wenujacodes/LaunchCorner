@@ -64,7 +64,7 @@ struct SettingsView: View {
                 Spacer()
             }
             .padding(.horizontal, 28)
-            .padding(.top, glassEnabled ? 38 : 12)
+            .padding(.top, 38)
             .padding(.bottom, 16)
             .opacity(settingsHeaderCollapsed ? 0 : 1)
             .frame(height: settingsHeaderCollapsed ? 0 : nil, alignment: .top)
