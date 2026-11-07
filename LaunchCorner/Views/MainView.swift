@@ -100,24 +100,7 @@ struct MainView: View {
         }
         .background(GlassWindowConfigurator(enabled: glassEnabled))
         .frame(width: 660, height: 540)
-        .background(alignment: .top) {
-            // Solid black behind the transparent system titlebar (glass mode
-            // only): full-size titlebars keep their native drag region and
-            // traffic lights, and read as a black bar. Layout-neutral.
-            // NOTE: first background = front-most; must sit above appBackdrop.
-            if glassEnabled {
-                ZStack(alignment: .center) {
-                    Color.black
-                    Text("LaunchCorner")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.9))
-                        .allowsHitTesting(false)
-                }
-                .frame(height: 30)
-            }
-        }
         .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
         .onAppear {
             if permissionManager.isAccessibilityGranted && configStore.config.isActive {
                 engine.start()

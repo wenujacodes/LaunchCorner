@@ -170,10 +170,7 @@ struct LaunchCornerApp: App {
             mainContent
         }
         .windowResizability(.contentSize)
-        // Owned by the scene so it sticks: no title chrome, floating traffic
-        // lights, draggable top region on every system. The black bar is
-        // painted in content (glass mode only).
-        .windowStyle(.hiddenTitleBar)
+        .windowStyle(.automatic)
     }
 
     private var mainContent: some View {

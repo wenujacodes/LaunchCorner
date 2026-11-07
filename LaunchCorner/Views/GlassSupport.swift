@@ -136,10 +136,14 @@ final class GlassWindowTuner: NSView {
     }
 
     func tune() {
-        // Transparency only — window chrome is scene-owned (hiddenTitleBar
-        // on 26+). Never mutates styleMask here: fighting SwiftUI's window
-        // controller corrupts traffic-light rendering.
+        // Glass: transparent window so view-level materials sample the real
+        // wallpaper, BUT titlebarAppearsTransparent = false so the native
+        // titlebar (standard `.automatic` style, no full-size content view)
+        // keeps drawing its own opaque background. Transparent content +
+        // opaque chrome — no fake black bar needed. Never mutates styleMask:
+        // fighting SwiftUI's window controller corrupts traffic lights.
         guard let window else { return }
+        window.titlebarAppearsTransparent = false
         if enabled {
             window.isOpaque = false
             window.backgroundColor = .clear
