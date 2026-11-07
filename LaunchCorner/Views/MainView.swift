@@ -100,11 +100,11 @@ struct MainView: View {
         }
         .background(GlassWindowConfigurator(enabled: glassEnabled))
         .frame(width: 660, height: 540)
-        .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
         .background(alignment: .top) {
             // Solid black behind the transparent system titlebar (glass mode
             // only): full-size titlebars keep their native drag region and
             // traffic lights, and read as a black bar. Layout-neutral.
+            // NOTE: first background = front-most; must sit above appBackdrop.
             if glassEnabled {
                 ZStack(alignment: .center) {
                     Color.black
@@ -116,6 +116,7 @@ struct MainView: View {
                 .frame(height: 30)
             }
         }
+        .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .onAppear {
             if permissionManager.isAccessibilityGranted && configStore.config.isActive {
