@@ -9,6 +9,9 @@ struct SettingsView: View {
     var onBack: () -> Void
     
     @State private var showingResetAlert = false
+    @State private var settingsHeaderCollapsed = false
+    
+    private var glassEnabled: Bool { GlassSupport.isEnabled(configStore.config) }
     
     private var enableLaunchCornerBinding: Binding<Bool> {
         Binding(
@@ -40,9 +43,19 @@ struct SettingsView: View {
         )
     }
     
+    private var liquidGlassBinding: Binding<Bool> {
+        Binding(
+            get: { configStore.config.useLiquidGlass },
+            set: { newValue in
+                configStore.config.useLiquidGlass = newValue
+                configStore.save()
+            }
+        )
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
-            // Top Left Title (Matching original screenshot)
+            // Collapsing title: fades and yields its space to content while scrolling
             HStack {
                 Text("Settings")
                     .font(.title2)
@@ -51,11 +64,23 @@ struct SettingsView: View {
                 Spacer()
             }
             .padding(.horizontal, 28)
-            .padding(.top, 4)
+            .padding(.top, 38)
             .padding(.bottom, 16)
+            .opacity(settingsHeaderCollapsed ? 0 : 1)
+            .frame(height: settingsHeaderCollapsed ? 0 : nil, alignment: .top)
+            .clipped()
+            .animation(.easeInOut(duration: 0.2), value: settingsHeaderCollapsed)
             
             ScrollView {
                 VStack(spacing: 24) {
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: SettingsScrollOffsetKey.self,
+                            value: proxy.frame(in: .named("settingsScroll")).minY
+                        )
+                    }
+                    .frame(height: 0)
+                    
                     // General
                     VStack(alignment: .leading, spacing: 10) {
                         Text("General")
@@ -70,6 +95,7 @@ struct SettingsView: View {
                                 Spacer()
                                 Toggle("", isOn: enableLaunchCornerBinding)
                                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                                    .tint(.accentColor)
                                     .controlSize(.small)
                                     .labelsHidden()
                             }
@@ -82,17 +108,42 @@ struct SettingsView: View {
                                 Spacer()
                                 Toggle("", isOn: $configStore.isLaunchAtLoginEnabled)
                                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                                    .tint(.accentColor)
                                     .controlSize(.small)
                                     .labelsHidden()
                             }
                         }
                         .padding(14)
-                        .background(colorScheme == .dark ? Color.white.opacity(0.04) : Color.white)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 1)
-                        )
+                        .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
+                    }
+                    
+                    // Appearance (Liquid Glass needs macOS 26+)
+                    if GlassSupport.isAvailable {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Appearance")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                            
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Liquid Glass")
+                                        .font(.body)
+                                    Text("Translucent glass interface")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                Toggle("", isOn: liquidGlassBinding)
+                                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                                    .tint(.accentColor)
+                                    .controlSize(.small)
+                                    .labelsHidden()
+                                    .help("Use the Liquid Glass look. Turn off to keep the classic appearance.")
+                            }
+                            .padding(14)
+                            .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
+                        }
                     }
                     
                     // Sensitivity
@@ -119,12 +170,7 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                         }
                         .padding(14)
-                        .background(colorScheme == .dark ? Color.white.opacity(0.04) : Color.white)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 1)
-                        )
+                        .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
                     }
                     
                     // Updates
@@ -141,6 +187,7 @@ struct SettingsView: View {
                                 Spacer()
                                 Toggle("", isOn: autoCheckUpdatesBinding)
                                     .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                                    .tint(.accentColor)
                                     .controlSize(.small)
                                     .labelsHidden()
                             }
@@ -155,15 +202,12 @@ struct SettingsView: View {
                                     updateManager.checkForUpdates()
                                 }
                                 .buttonStyle(.bordered)
+                                .adaptiveGlassButton(glass: glassEnabled)
+                                .help("Check for software updates now")
                             }
                         }
                         .padding(14)
-                        .background(colorScheme == .dark ? Color.white.opacity(0.04) : Color.white)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 1)
-                        )
+                        .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
                     }
                     
                     // App
@@ -182,6 +226,8 @@ struct SettingsView: View {
                                     NSApp.terminate(nil)
                                 }
                                 .buttonStyle(.bordered)
+                                .adaptiveGlassButton(glass: glassEnabled)
+                                .help("Quit LaunchCorner")
                             }
                             
                             Divider()
@@ -195,15 +241,12 @@ struct SettingsView: View {
                                 }
                                 .foregroundColor(.red)
                                 .buttonStyle(.bordered)
+                                .adaptiveGlassButton(glass: glassEnabled)
+                                .help("Reset all corner assignments and preferences")
                             }
                         }
                         .padding(14)
-                        .background(colorScheme == .dark ? Color.white.opacity(0.04) : Color.white)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 1)
-                        )
+                        .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
                     }
                     
                     // About
@@ -231,7 +274,7 @@ struct SettingsView: View {
                                         .font(.body)
                                         .foregroundColor(.accentColor)
                                     Spacer()
-                                    Image(systemName: "bubble.left.and.bubble.right")
+                                    Image(systemName: "exclamationmark.bubble")
                                         .foregroundColor(.secondary)
                                 }
                             }
@@ -244,7 +287,7 @@ struct SettingsView: View {
                                         .font(.body)
                                         .foregroundColor(.accentColor)
                                     Spacer()
-                                    Image(systemName: "arrow.up.right.square")
+                                    Image(systemName: "link")
                                         .foregroundColor(.secondary)
                                 }
                             }
@@ -257,26 +300,29 @@ struct SettingsView: View {
                                         .font(.body)
                                         .foregroundColor(.accentColor)
                                     Spacer()
-                                    Image(systemName: "arrow.up.right.square")
+                                    Image(systemName: "link")
                                         .foregroundColor(.secondary)
                                 }
                             }
                         }
                         .padding(14)
-                        .background(colorScheme == .dark ? Color.white.opacity(0.04) : Color.white)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08), lineWidth: 1)
-                        )
+                        .cardChrome(glass: glassEnabled, colorScheme: colorScheme)
                     }
                 }
                 .padding(.horizontal, 28)
                 .padding(.bottom, 24)
             }
+            .coordinateSpace(name: "settingsScroll")
+            .modifier(SettingsCollapseDriver(collapsed: $settingsHeaderCollapsed))
+            .onPreferenceChange(SettingsScrollOffsetKey.self) { minY in
+                // Fallback for macOS 14; macOS 15+ is driven by SettingsCollapseDriver.
+                let collapsed = minY < -12
+                if collapsed != settingsHeaderCollapsed {
+                    settingsHeaderCollapsed = collapsed
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(colorScheme == .dark ? Color(red: 0x24/255.0, green: 0x23/255.0, blue: 0x21/255.0) : Color(red: 0xF5/255.0, green: 0xF5/255.0, blue: 0xF7/255.0))
         .alert("Reset All Configurations?", isPresented: $showingResetAlert) {
             Button("Cancel", role: .cancel) {}
             Button("Reset Everything", role: .destructive) {
@@ -286,6 +332,34 @@ struct SettingsView: View {
             }
         } message: {
             Text("This will clear all corner assignments, reset preferences, and return LaunchCorner to setup. This cannot be undone.")
+        }
+    }
+}
+
+private struct SettingsScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+/// Collapses the Settings title once scrolled, using the native scroll
+/// geometry driver (macOS 15+). Discrete toggles only; the header animates them.
+private struct SettingsCollapseDriver: ViewModifier {
+    @Binding var collapsed: Bool
+
+    func body(content: Content) -> some View {
+        if #available(macOS 15, *) {
+            content.onScrollGeometryChange(for: CGFloat.self, of: {
+                $0.contentOffset.y + $0.contentInsets.top
+            }) { _, offsetY in
+                let shouldCollapse = offsetY > 12
+                if shouldCollapse != collapsed {
+                    collapsed = shouldCollapse
+                }
+            }
+        } else {
+            content
         }
     }
 }

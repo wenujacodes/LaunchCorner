@@ -167,30 +167,35 @@ struct LaunchCornerApp: App {
     
     var body: some Scene {
         WindowGroup("LaunchCorner", id: "main-window") {
-            MainViewContainer(appDelegate: appDelegate)
-                .environmentObject(appState.configStore)
-                .environmentObject(appState.permissionManager)
-                .environmentObject(appState.engine)
-                .environmentObject(appState.updateManager)
-                .onAppear {
-                    appDelegate.appState = appState
-                    
-                    // Start in the background only if setup is done; otherwise show onboarding.
-                    let startHidden = appDelegate.shouldStartHidden && appState.permissionManager.isAccessibilityGranted
-                    appDelegate.shouldStartHidden = false
-                    if !startHidden {
-                        appDelegate.showMainWindow()
-                    }
-                    appState.permissionManager.startMonitoringPermission()
-                    
-                    if startHidden {
-                        // Defer so the window's views finish their own setup first
-                        DispatchQueue.main.async {
-                            appDelegate.hideMainWindowForBackgroundLaunch()
-                        }
-                    }
-                }
+            mainContent
         }
         .windowResizability(.contentSize)
+        .windowStyle(.automatic)
+    }
+
+    private var mainContent: some View {
+        MainViewContainer(appDelegate: appDelegate)
+            .environmentObject(appState.configStore)
+            .environmentObject(appState.permissionManager)
+            .environmentObject(appState.engine)
+            .environmentObject(appState.updateManager)
+            .onAppear {
+                appDelegate.appState = appState
+
+                // Start in the background only if setup is done; otherwise show onboarding.
+                let startHidden = appDelegate.shouldStartHidden && appState.permissionManager.isAccessibilityGranted
+                appDelegate.shouldStartHidden = false
+                if !startHidden {
+                    appDelegate.showMainWindow()
+                }
+                appState.permissionManager.startMonitoringPermission()
+
+                if startHidden {
+                    // Defer so the window's views finish their own setup first
+                    DispatchQueue.main.async {
+                        appDelegate.hideMainWindowForBackgroundLaunch()
+                    }
+                }
+            }
     }
 }
