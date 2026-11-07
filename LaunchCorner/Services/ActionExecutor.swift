@@ -22,6 +22,8 @@ class ActionExecutor {
                 SystemActionExecutor.perform(systemAction)
             case .screenshot(let kind, let destination, let directory):
                 SystemActionExecutor.screenshot(kind: kind, destination: destination, directory: directory)
+            case .shortcut(let name, let identifier):
+                ShortcutExecutor.run(name: name, identifier: identifier)
             }
         }
     }

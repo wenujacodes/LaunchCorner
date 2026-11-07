@@ -20,6 +20,7 @@ HARNESS_SRC = [
     "LaunchCorner/Models/CornerConfig.swift",
     "LaunchCorner/Services/MainThread.swift",
     "LaunchCorner/Services/WatchedProcess.swift",
+    "LaunchCorner/Services/ShortcutExecutor.swift",
     "LaunchCorner/Services/KeyPress.swift",
     "LaunchCorner/Services/QuickLinkExecutor.swift",
     "LaunchCorner/Services/ShellExecutor.swift",

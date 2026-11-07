@@ -38,6 +38,8 @@ case "model":
         .windowSnap(position: .bottomRight),
         .systemAction(.sleepSystem),
         .screenshot(kind: .window, destination: .file, directory: "~/Pictures"),
+        .shortcut(name: "Look at Me", identifier: "5A8FACA6-6746-4378-B23E-72FBEED65221"),
+        .shortcut(name: "Typed Name", identifier: nil),
     ]
     for (i, c) in cases.enumerated() {
         if let d = try? enc.encode(c), let back = try? dec.decode(CornerAction.self, from: d) {
@@ -56,6 +58,17 @@ case "model":
     t("bad-sys", isNone("{\"systemAction\":{\"action\":\"bogus\"}}"))
     t("bad-shot", isNone("{\"screenshot\":{\"kind\":\"bogus\"}}"))
     t("bad-lang", isNone("{\"script\":{\"language\":\"bogus\",\"path\":\"/x\"}}"))
+    t("bad-shortcut", isNone("{\"shortcut\":{\"name\":\"  \",\"identifier\":\"X\"}}"))
+    t("shortcut-noid", decode("{\"shortcut\":{\"name\":\"Look at Me\"}}") == .shortcut(name: "Look at Me", identifier: nil))
+    // `shortcuts list --show-identifiers` parsing: names may contain parens,
+    // only a trailing UUID counts; stable IDs win for running.
+    let parsed = ShortcutExecutor.parseListOutput("B (AAAAAAAA-1111-2222-3333-444444444444)\nMy (Test) Shortcut (BBBBBBBB-1111-2222-3333-444444444444)\nNoID\n")
+    t("shortcut-parse", parsed.map(\.name) == ["B", "My (Test) Shortcut", "NoID"]
+        && parsed[0].identifier == "AAAAAAAA-1111-2222-3333-444444444444"
+        && parsed[2].identifier == nil)
+    t("shortcut-target", ShortcutExecutor.targetString(name: "N", identifier: "ID") == "ID"
+        && ShortcutExecutor.targetString(name: " N ", identifier: nil) == "N"
+        && ShortcutExecutor.targetString(name: "  ", identifier: nil).isEmpty)
     // Corrupt AppConfig fields fall back per-field; valid corners survive
     let corruptCfg = "{\"screenConfigs\":{},\"defaultConfig\":{\"corners\":{\"topLeft\":{\"launchApp\":{\"bundlePath\":\"/Applications/Safari.app\",\"appName\":\"Safari\"}}}},\"dwellTime\":\"fast\",\"monitorMode\":\"bogus\",\"isActive\":true}"
     if let back = try? dec.decode(AppConfig.self, from: Data(corruptCfg.utf8)) {
@@ -85,6 +98,7 @@ case "model":
         .quickLink(name: "", url: "https://e.com", openWithBundleID: nil),
         .script(language: .bash, path: "/s.sh", description: ""),
         .script(language: .go, path: "/p", description: ""),
+        .shortcut(name: "Look at Me", identifier: "5A8FACA6-6746-4378-B23E-72FBEED65221"),
         .windowSnap(position: .top),
         .systemAction(.lockScreen),
         .screenshot(kind: .full, destination: .clipboard, directory: "~/Pictures")]
@@ -97,6 +111,8 @@ case "model":
         && !SystemAction.allCases.map(\.rawValue).contains("appExpose"))
     t("configured", CornerAction.none.isConfigured == false
         && CornerAction.windowSnap(position: .left).isConfigured
+        && CornerAction.shortcut(name: "Look at Me", identifier: nil).isConfigured
+        && CornerAction.shortcut(name: "  ", identifier: nil).isConfigured == false
         && CornerAction.quickLink(name: "", url: "", openWithBundleID: nil).isConfigured == false)
     out("MODEL-DONE \(n)")
 

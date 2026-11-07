@@ -1,9 +1,10 @@
 import Foundation
 import AppKit
 
-// The 4 screen corners
+// The 4 screen corners + 3 screen edges (no bottom edge)
 enum Corner: String, Codable, CaseIterable, Identifiable {
     case topLeft, topRight, bottomLeft, bottomRight
+    case topEdge, leftEdge, rightEdge
     var id: String { rawValue }
     
     var displayName: String {
@@ -12,6 +13,9 @@ enum Corner: String, Codable, CaseIterable, Identifiable {
         case .topRight: return "Top Right"
         case .bottomLeft: return "Bottom Left"
         case .bottomRight: return "Bottom Right"
+        case .topEdge: return "Top Edge"
+        case .leftEdge: return "Left Edge"
+        case .rightEdge: return "Right Edge"
         }
     }
     
@@ -21,16 +25,29 @@ enum Corner: String, Codable, CaseIterable, Identifiable {
         case .topRight: return "arrow.up.right"
         case .bottomLeft: return "arrow.down.left"
         case .bottomRight: return "arrow.down.right"
+        case .topEdge: return "arrow.up"
+        case .leftEdge: return "arrow.left"
+        case .rightEdge: return "arrow.right"
+        }
+    }
+
+    /// True for edge zones (no macOS system Hot Corner counterpart).
+    var isEdge: Bool {
+        switch self {
+        case .topEdge, .leftEdge, .rightEdge: return true
+        default: return false
         }
     }
 
     /// Defaults key macOS uses for this corner's Hot Corner action.
-    var hotCornerDefaultsKey: String {
+    /// Nil for edges (macOS has no edge triggers).
+    var hotCornerDefaultsKey: String? {
         switch self {
         case .topLeft: return "wvous-tl-corner"
         case .topRight: return "wvous-tr-corner"
         case .bottomLeft: return "wvous-bl-corner"
         case .bottomRight: return "wvous-br-corner"
+        case .topEdge, .leftEdge, .rightEdge: return nil
         }
     }
 }
@@ -43,9 +60,11 @@ enum MacOSHotCorners {
 
     /// True when the macOS system hot corner is set to nothing (0/1) or
     /// unreadable (fail-open: never block configuration on detection failure).
+    /// Edges have no macOS counterpart, so they are always configurable.
     static func isDisabled(_ corner: Corner) -> Bool {
+        guard let key = corner.hotCornerDefaultsKey else { return true }
         guard let dock = UserDefaults(suiteName: "com.apple.dock") else { return true }
-        let value = dock.integer(forKey: corner.hotCornerDefaultsKey)
+        let value = dock.integer(forKey: key)
         return value == 0 || value == 1
     }
 }
@@ -59,6 +78,7 @@ enum CornerAction: Equatable {
     case windowSnap(position: SnapPosition)
     case systemAction(SystemAction)
     case screenshot(kind: ScreenshotKind, destination: ScreenshotDestination, directory: String)
+    case shortcut(name: String, identifier: String?)
 
     var displayName: String {
         switch self {
@@ -69,6 +89,7 @@ enum CornerAction: Equatable {
         case .windowSnap(let position): return "Snap \(position.displayName)"
         case .systemAction(let action): return action.displayName
         case .screenshot(let kind, let destination, _): return "\(kind.displayName) → \(destination.displayName)"
+        case .shortcut(let name, _): return name.isEmpty ? "Apple Shortcut" : name
         }
     }
 
@@ -84,6 +105,8 @@ enum CornerAction: Equatable {
         case .systemAction(let action): return action.detailText
         case .screenshot(let kind, let destination, let directory):
             return destination == .clipboard ? "\(kind.displayName) to Clipboard" : "\(kind.displayName) to \(directory)"
+        case .shortcut:
+            return "Apple Shortcut"
         }
     }
 
@@ -97,6 +120,7 @@ enum CornerAction: Equatable {
         case .windowSnap(let position): return position.symbolName
         case .systemAction(let action): return action.symbolName
         case .screenshot: return "camera.viewfinder"
+        case .shortcut: return "wand.and.stars"
         }
     }
 
@@ -108,6 +132,7 @@ enum CornerAction: Equatable {
             return !bundlePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .quickLink(_, let url, _): return !url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .script(_, let path, _): return !path.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .shortcut(let name, _): return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         default: return true
         }
     }
@@ -327,7 +352,7 @@ private struct AnyCodingKey: CodingKey {
 
 extension CornerAction: Codable {
     private enum Key: String, CodingKey {
-        case none, launchApp, quickLink, script, windowSnap, systemAction, screenshot
+        case none, launchApp, quickLink, script, windowSnap, systemAction, screenshot, shortcut
     }
 
     // Per-field tolerance: a missing/wrong-typed sibling string field (including
@@ -447,6 +472,24 @@ extension CornerAction: Codable {
             try c.encode(directory, forKey: .directory)
         }
     }
+    private struct ShortcutPayload: Codable {
+        var name: String = ""
+        var identifier: String? = nil
+        enum K: String, CodingKey { case name, identifier }
+        init(name: String = "", identifier: String? = nil) {
+            self.name = name; self.identifier = identifier
+        }
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: K.self)
+            name = CornerAction.field(c, .name, fallback: "")
+            identifier = (try? c.decodeIfPresent(String.self, forKey: .identifier)).flatMap { $0 }
+        }
+        func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: K.self)
+            try c.encode(name, forKey: .name)
+            try c.encodeIfPresent(identifier, forKey: .identifier)
+        }
+    }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: Key.self)
@@ -490,6 +533,10 @@ extension CornerAction: Codable {
             }
             let directory = p.directory.isEmpty ? "~/Pictures" : p.directory
             self = .screenshot(kind: p.kind, destination: p.destination, directory: directory)
+        case .shortcut:
+            let p = (try? container.decode(ShortcutPayload.self, forKey: .shortcut)) ?? ShortcutPayload()
+            self = p.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? .none : .shortcut(name: p.name, identifier: p.identifier)
         }
     }
 
@@ -510,6 +557,8 @@ extension CornerAction: Codable {
             try container.encode(SystemActionPayload(action: action), forKey: .systemAction)
         case .screenshot(let kind, let destination, let directory):
             try container.encode(ScreenshotPayload(kind: kind, destination: destination, directory: directory), forKey: .screenshot)
+        case .shortcut(let name, let identifier):
+            try container.encode(ShortcutPayload(name: name, identifier: identifier), forKey: .shortcut)
         }
     }
 }
@@ -550,7 +599,10 @@ struct ScreenCornerConfig: Codable, Equatable {
             Corner.topLeft.rawValue: .none,
             Corner.topRight.rawValue: .none,
             Corner.bottomLeft.rawValue: .none,
-            Corner.bottomRight.rawValue: .none
+            Corner.bottomRight.rawValue: .none,
+            Corner.topEdge.rawValue: .none,
+            Corner.leftEdge.rawValue: .none,
+            Corner.rightEdge.rawValue: .none
         ])
     }
     

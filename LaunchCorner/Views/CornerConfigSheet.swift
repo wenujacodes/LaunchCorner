@@ -11,13 +11,14 @@ struct CornerConfigSheet: View {
     let screenID: String?
 
     private enum ConfigCategory: String, CaseIterable, Identifiable {
-        case app, quickLink, command, window, system
+        case app, quickLink, shortcut, command, window, system
         var id: String { rawValue }
 
         var title: String {
             switch self {
             case .app: return "App"
             case .quickLink: return "Quick Link"
+            case .shortcut: return "Shortcut"
             case .command: return "Script"
             case .window: return "Window"
             case .system: return "System"
@@ -28,6 +29,7 @@ struct CornerConfigSheet: View {
             switch self {
             case .app: return "app.dashed"
             case .quickLink: return "link"
+            case .shortcut: return "wand.and.stars"
             case .command: return "doc.text"
             case .window: return "macwindow"
             case .system: return "bolt.fill"
@@ -47,6 +49,16 @@ struct CornerConfigSheet: View {
     @State private var linkURL: String = ""
     @State private var linkOpenWithBundleID: String? = nil
     @State private var linkOpenWithName: String = ""
+
+    // Shortcut draft (Apple Shortcuts on this Mac via `shortcuts list`)
+    @State private var selectedShortcutName: String = ""
+    @State private var selectedShortcutID: String? = nil
+    @State private var shortcuts: [UserShortcut] = []
+    @State private var isLoadingShortcuts = false
+    @State private var shortcutsError: String? = nil
+    @State private var shortcutSearch: String = ""
+    @State private var shortcutTouched = false
+    @State private var shortcutsLoaded = false
 
     // Command draft (script only)
     @State private var scriptLanguage: ScriptLanguage = .bash
@@ -162,6 +174,12 @@ struct CornerConfigSheet: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .onAppear {
             loadCurrentConfig()
+            loadShortcuts()
+        }
+        .onChange(of: selectedCategory) { _, newValue in
+            if newValue == .shortcut {
+                loadShortcuts()
+            }
         }
     }
 
@@ -317,6 +335,8 @@ struct CornerConfigSheet: View {
             appDetail
         case .quickLink:
             quickLinkDetail
+        case .shortcut:
+            shortcutDetail
         case .command:
             commandDetail
         case .window:
@@ -413,7 +433,7 @@ struct CornerConfigSheet: View {
                     .foregroundColor(.secondary)
                 TextField("https://…, shortcuts://…, ~/path", text: $linkURL)
                     .textFieldStyle(.roundedBorder)
-                    .help("URL, shortcut URL, or file path to open")
+                    .help("URL, file path, or shortcuts:// link. To pick an installed Shortcut, use the Shortcut tab.")
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text("Open with (optional)")
@@ -444,6 +464,172 @@ struct CornerConfigSheet: View {
             }
         }
         .detailChrome(glass: glassEnabled, colorScheme: colorScheme)
+    }
+
+    // MARK: Shortcut detail (Apple Shortcuts on this Mac)
+
+    private var filteredShortcuts: [UserShortcut] {
+        let q = shortcutSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return shortcuts }
+        return shortcuts.filter { $0.name.localizedCaseInsensitiveContains(q) }
+    }
+
+    private var shortcutDetail: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
+                TextField("Search shortcuts", text: $shortcutSearch)
+                    .textFieldStyle(.roundedBorder)
+                Button {
+                    loadShortcuts(force: true)
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.accentColor)
+                .disabled(isLoadingShortcuts)
+                .help("Reload shortcuts from this Mac (`shortcuts list`)")
+            }
+            if isLoadingShortcuts, shortcuts.isEmpty {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Loading shortcuts…")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 16)
+            } else if let err = shortcutsError, shortcuts.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                            .accessibilityHidden(true)
+                        Text(err)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                    }
+                    Button("Try Again") { loadShortcuts(force: true) }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.accentColor)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 8)
+            } else if shortcuts.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "wand.and.stars")
+                        .font(.system(size: 28))
+                        .foregroundColor(.secondary)
+                        .accessibilityHidden(true)
+                    Text("No shortcuts on this Mac")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Text("Create one in the Shortcuts app first.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Button("Open Shortcuts") { ShortcutExecutor.openShortcutsApp() }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.accentColor)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+            } else if filteredShortcuts.isEmpty {
+                Text("No shortcuts match \"\(shortcutSearch)\".")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 16)
+            } else {
+                VStack(spacing: 2) {
+                    ForEach(filteredShortcuts) { item in
+                        let selected = item.name == selectedShortcutName
+                        HStack(spacing: 10) {
+                            Image(systemName: "wand.and.stars")
+                                .font(.system(size: 14))
+                                .foregroundColor(selected ? .accentColor : .secondary)
+                                .frame(width: 22, height: 22, alignment: .center)
+                                .accessibilityHidden(true)
+                            Text(item.name)
+                                .font(.body)
+                                .fontWeight(selected ? .semibold : .regular)
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                            Spacer()
+                            if selected {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.accentColor)
+                                    .accessibilityHidden(true)
+                            }
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(selectedOptionFill(selected: selected, colorScheme: colorScheme))
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            selectedShortcutName = item.name
+                            selectedShortcutID = item.identifier
+                            shortcutTouched = true
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAddTraits(selected ? .isSelected : [])
+                        .accessibilityAction {
+                            selectedShortcutName = item.name
+                            selectedShortcutID = item.identifier
+                            shortcutTouched = true
+                        }
+                        .help("Run \"\(item.name)\" when the \(corner.displayName) corner triggers")
+                    }
+                }
+                HStack {
+                    Text("\(shortcuts.count) shortcut\(shortcuts.count == 1 ? "" : "s") on this Mac")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Button("Open Shortcuts") { ShortcutExecutor.openShortcutsApp() }
+                        .buttonStyle(.plain)
+                        .font(.caption)
+                        .foregroundColor(.accentColor)
+                }
+            }
+        }
+        .detailChrome(glass: glassEnabled, colorScheme: colorScheme)
+    }
+
+    private func loadShortcuts(force: Bool = false) {
+        if isLoadingShortcuts { return }
+        if shortcutsLoaded, !force { return }
+        isLoadingShortcuts = true
+        shortcutsError = nil
+        Task {
+            let result = await ShortcutExecutor.fetchShortcuts()
+            await MainActor.run {
+                isLoadingShortcuts = false
+                shortcutsLoaded = true
+                switch result {
+                case .success(let items):
+                    shortcuts = items
+                    // Stored shortcut deleted on-device: keep the saved name
+                    // (runs by name) rather than silently dropping it.
+                    if !selectedShortcutName.isEmpty,
+                       !items.contains(where: { $0.name == selectedShortcutName }) {
+                        shortcutsError = "\"\(selectedShortcutName)\" is no longer installed; pick a replacement or it still runs by name."
+                    }
+                case .failure(let error):
+                    shortcutsError = error.localizedDescription
+                }
+            }
+        }
     }
 
     // MARK: Command detail
@@ -702,6 +888,16 @@ struct CornerConfigSheet: View {
                 return .none
             }
             return .script(language: scriptLanguage, path: scriptPath, description: scriptDescription)
+        case .shortcut:
+            // Untouched default must not count: merely peeking at the tab
+            // must never arm an overwrite of the stored action.
+            if !shortcutTouched {
+                return .none
+            }
+            if selectedShortcutName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return .none
+            }
+            return .shortcut(name: selectedShortcutName, identifier: selectedShortcutID)
         case .window:
             // Untouched default must not count: merely peeking at the tab
             // must never arm an overwrite of the stored action.
@@ -736,6 +932,9 @@ struct CornerConfigSheet: View {
             return !linkURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .command:
             return !scriptPath.isEmpty
+        case .shortcut:
+            return shortcutTouched
+                && !selectedShortcutName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .window:
             return windowTouched
         case .system:
@@ -774,6 +973,7 @@ struct CornerConfigSheet: View {
         selectedCategory = .app
         windowTouched = false
         systemTouched = false
+        shortcutTouched = false
         selectedAppPath = ""
         selectedAppName = ""
         selectedAppIcon = nil
@@ -781,6 +981,9 @@ struct CornerConfigSheet: View {
         linkURL = ""
         linkOpenWithBundleID = nil
         linkOpenWithName = ""
+        selectedShortcutName = ""
+        selectedShortcutID = nil
+        shortcutSearch = ""
         scriptLanguage = .bash
         scriptPath = ""
         scriptDescription = ""
@@ -826,6 +1029,11 @@ struct CornerConfigSheet: View {
             scriptLanguage = language
             scriptPath = path
             scriptDescription = description
+        case .shortcut(let name, let identifier):
+            clearDraft()
+            selectedCategory = .shortcut
+            selectedShortcutName = name
+            selectedShortcutID = identifier
         case .windowSnap(let position):
             clearDraft()
             selectedCategory = .window
@@ -852,6 +1060,8 @@ struct CornerConfigSheet: View {
             initialCategory = .app
         case .quickLink:
             initialCategory = .quickLink
+        case .shortcut:
+            initialCategory = .shortcut
         case .script:
             initialCategory = .command
         case .windowSnap:

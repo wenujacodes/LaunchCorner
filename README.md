@@ -1,6 +1,6 @@
 # LaunchCorner
 
-**LaunchCorner** turns your screen corners into instant actions. Move your cursor to any screen corner to launch apps, open links, run scripts, snap windows, trigger system actions, or take screenshots — instantly. Built natively for macOS using SwiftUI, with a Liquid Glass interface on macOS 26+.
+**LaunchCorner** turns your screen corners into instant actions. Move your cursor to any screen corner to launch apps, open links, run Apple Shortcuts, run scripts, snap windows, trigger system actions, or take screenshots — instantly. Built natively for macOS using SwiftUI, with a Liquid Glass interface on macOS 26+.
 
 ---
 
@@ -49,10 +49,11 @@ Native SwiftUI, Apple Silicon-optimized, background-friendly, and fully open-sou
 
 ### Corner Actions
 
-Each corner triggers one of five categories (configured per corner in the sheet shown above, Liquid Glass UI on macOS 26+):
+Each corner triggers one of six categories (configured per corner in the sheet shown above, Liquid Glass UI on macOS 26+):
 
 - **App** — launch any application.
 - **Quick Link** — open a URL, `shortcuts://` Shortcut link, or file path, optionally with a specific app.
+- **Shortcut** — run an Apple Shortcut installed on this Mac (listed via `shortcuts list`, run headless via `shortcuts run`).
 - **Script** — run a script file (Bash, AppleScript, Python, JavaScript, TypeScript, Go, Ruby, C#). Missing interpreters are flagged in the sheet with install hints (see below).
 - **Window** — snap the front window to Top / Bottom / Left / Right halves or any screen quarter. Requires Accessibility access (already required by the app).
 - **System** — Spotlight, play/pause/next/previous track, screen saver, lock screen, sleep display + full sleep, log out / restart / shut down (confirm first), eject all disks (confirm first), empty Trash (confirm first, irreversible) / open Trash, hide other apps, quit all / quit-all-except-frontmost / restart frontmost app (all confirm first), toggles (hidden files, mute, Stage Manager, system appearance), plus screenshots (Fullscreen / Selection / Window → file or clipboard). Keyboard-based actions require Accessibility access; screenshots require Screen Recording access on first capture.
@@ -61,7 +62,11 @@ Each corner triggers one of five categories (configured per corner in the sheet 
 
 ### Quick Link usage
 
-A Quick Link opens anything addressable: `https://…` URLs, file paths (`~/Downloads`), app deep links (`obsidian://…`, `mailto:…`), and Apple Shortcuts (`shortcuts://run-shortcut?name=My%20Shortcut` — use the exact Shortcut name; spaces are encoded automatically). Optionally pick an app to open it with (falls back to the default handler).
+A Quick Link opens anything addressable: `https://…` URLs, file paths (`~/Downloads`), app deep links (`obsidian://…`, `mailto:…`), and Apple Shortcuts (`shortcuts://run-shortcut?name=My%20Shortcut` — use the exact Shortcut name; spaces are encoded automatically). To pick from the Shortcuts installed on this Mac instead, use the **Shortcut** tab. Optionally pick an app to open it with (falls back to the default handler).
+
+### Shortcut usage
+
+The Shortcut tab lists every Apple Shortcut on this Mac via `shortcuts list --show-identifiers` (no extra permission needed — see [Run shortcuts from the command line](https://support.apple.com/guide/shortcuts-mac/run-shortcuts-from-the-command-line-apd455c82f02/mac)). Pick one to run it headless via `shortcuts run` when the corner triggers; stored by name plus its stable identifier so renames keep working. If the Shortcut was deleted, the saved name still runs by name or pick a replacement.
 
 ### Script usage
 

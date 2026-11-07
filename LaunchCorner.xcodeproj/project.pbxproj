@@ -29,6 +29,7 @@
 		C60000000000000000000001 /* SystemActionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60000000000000000000000 /* SystemActionExecutor.swift */; };
 		C70000000000000000000001 /* MainThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000000 /* MainThread.swift */; };
 		C80000000000000000000001 /* WatchedProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = C80000000000000000000000 /* WatchedProcess.swift */; };
+		C90000000000000000000001 /* ShortcutExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90000000000000000000000 /* ShortcutExecutor.swift */; };
 		1C0000000000000000000001 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 1C0000000000000000000000 /* AppIcon.icon */; };
 		BB0000000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB0000000000000000000000 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -56,6 +57,7 @@
 		C60000000000000000000000 /* SystemActionExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemActionExecutor.swift; sourceTree = "<group>"; };
 		C70000000000000000000000 /* MainThread.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainThread.swift; sourceTree = "<group>"; };
 		C80000000000000000000000 /* WatchedProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedProcess.swift; sourceTree = "<group>"; };
+		C90000000000000000000000 /* ShortcutExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutExecutor.swift; sourceTree = "<group>"; };
 		1C0000000000000000000000 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		BB0000000000000000000000 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BC0000000000000000000000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -120,6 +122,7 @@
 				C60000000000000000000000 /* SystemActionExecutor.swift */,
 				C70000000000000000000000 /* MainThread.swift */,
 				C80000000000000000000000 /* WatchedProcess.swift */,
+				C90000000000000000000000 /* ShortcutExecutor.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -243,6 +246,7 @@
 				C60000000000000000000001 /* SystemActionExecutor.swift in Sources */,
 				C70000000000000000000001 /* MainThread.swift in Sources */,
 				C80000000000000000000001 /* WatchedProcess.swift in Sources */,
+				C90000000000000000000001 /* ShortcutExecutor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
