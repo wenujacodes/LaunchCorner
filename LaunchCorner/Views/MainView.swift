@@ -55,6 +55,19 @@ struct MainView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            // Solid black custom title bar (glass mode only): Tahoe draws
+            // system titlebars as glass, which has no drag region.
+            if glassEnabled {
+                ZStack {
+                    Color.black
+                    DragWindowView()
+                    Text("LaunchCorner")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .allowsHitTesting(false)
+                }
+                .frame(height: 36)
+            }
             // Hidden button to catch Cmd+, shortcut
             Button("") {
                 withAnimation(.easeInOut(duration: 0.25)) {

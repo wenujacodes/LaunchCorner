@@ -119,6 +119,7 @@ struct GlassWindowConfigurator: NSViewRepresentable {
 
 final class GlassWindowTuner: NSView {
     var enabled: Bool
+    private var appliedFullSize = false
 
     init(enabled: Bool) {
         self.enabled = enabled
@@ -134,20 +135,50 @@ final class GlassWindowTuner: NSView {
         super.viewDidMoveToWindow()
         tune()
     }
-
     func tune() {
         guard let window else { return }
-        if enabled {
-            // Transparent content so glass samples wallpaper — but the
-            // titlebar stays opaque: a glass titlebar has no drag region.
+        // Sheets keep system chrome; only top-level titled windows change.
+        let isMainWindow = window.parent == nil && window.styleMask.contains(.titled)
+        if enabled, isMainWindow {
+            // Solid black custom bar (drawn in content): hide the system
+            // titlebar, which on Tahoe is Liquid Glass by design.
+            var mask = window.styleMask
+            mask.insert(.fullSizeContentView)
+            window.styleMask = mask
+            window.titlebarAppearsTransparent = true
+            window.titleVisibility = .hidden
+            window.title = ""
             window.isOpaque = false
             window.backgroundColor = .clear
-            window.titlebarAppearsTransparent = false
             window.hasShadow = true
+            appliedFullSize = true
         } else {
-            window.isOpaque = true
-            window.backgroundColor = .windowBackgroundColor
+            if appliedFullSize {
+                var mask = window.styleMask
+                mask.remove(.fullSizeContentView)
+                window.styleMask = mask
+                appliedFullSize = false
+            }
             window.titlebarAppearsTransparent = false
+            window.titleVisibility = .visible
+            window.title = "LaunchCorner"
+            window.isOpaque = !enabled
+            window.backgroundColor = enabled ? .clear : .windowBackgroundColor
         }
     }
+}
+
+/// Zero-chrome drag handle: an empty view whose region moves the window,
+/// used under the custom black title bar (full-size content has no
+/// system drag region of its own).
+struct DragWindowView: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        DragCatcher()
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {}
+}
+
+private final class DragCatcher: NSView {
+    override var mouseDownCanMoveWindow: Bool { true }
 }
