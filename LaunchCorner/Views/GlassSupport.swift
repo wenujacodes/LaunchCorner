@@ -167,18 +167,3 @@ final class GlassWindowTuner: NSView {
         }
     }
 }
-
-/// Zero-chrome drag handle: an empty view whose region moves the window,
-/// used under the custom black title bar (full-size content has no
-/// system drag region of its own).
-struct DragWindowView: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        DragCatcher()
-    }
-
-    func updateNSView(_ view: NSView, context: Context) {}
-}
-
-private final class DragCatcher: NSView {
-    override var mouseDownCanMoveWindow: Bool { true }
-}

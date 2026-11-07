@@ -12,6 +12,8 @@ struct ScreenCornerView: View {
     
     private let imageSize: CGFloat = 460
     
+    private var glassEnabled: Bool { GlassSupport.isEnabled(configStore.config) }
+    
     /// Opens the config sheet only when the macOS system corner is disabled;
     /// otherwise pops an alert sending the user to Hot Corners settings.
     private func requestConfigure(_ corner: Corner) {
@@ -74,6 +76,7 @@ struct ScreenCornerView: View {
             .frame(width: imageSize, height: imageSize)
             .offset(y: -60)
         }
+        .padding(.top, glassEnabled ? 30 : 0)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(item: $activeSheet) { corner in
             CornerConfigSheet(corner: corner, screenID: selectedScreenID)

@@ -55,19 +55,6 @@ struct MainView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Solid black custom title bar (glass mode only): Tahoe draws
-            // system titlebars as glass, which has no drag region.
-            if glassEnabled {
-                ZStack {
-                    Color.black
-                    DragWindowView()
-                    Text("LaunchCorner")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.9))
-                        .allowsHitTesting(false)
-                }
-                .frame(height: 36)
-            }
             // Hidden button to catch Cmd+, shortcut
             Button("") {
                 withAnimation(.easeInOut(duration: 0.25)) {
@@ -114,8 +101,21 @@ struct MainView: View {
         .background(GlassWindowConfigurator(enabled: glassEnabled))
         .frame(width: 660, height: 540)
         .appBackdrop(glass: glassEnabled, colorScheme: colorScheme)
-        // Match the window's rounded mask: square content pixels fringing
-        // past the corner curve read as a white seam on transparent windows.
+        .background(alignment: .top) {
+            // Solid black behind the transparent system titlebar (glass mode
+            // only): full-size titlebars keep their native drag region and
+            // traffic lights, and read as a black bar. Layout-neutral.
+            if glassEnabled {
+                ZStack(alignment: .center) {
+                    Color.black
+                    Text("LaunchCorner")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .allowsHitTesting(false)
+                }
+                .frame(height: 30)
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .onAppear {
             if permissionManager.isAccessibilityGranted && configStore.config.isActive {
