@@ -153,6 +153,7 @@ class CornerDetectionEngine: ObservableObject {
             
             let frame = screen.frame
             
+            // Corners take priority over edges (corner squares win ties).
             if point.x <= frame.minX + hitZone && point.y >= frame.maxY - hitZone {
                 return (.topLeft, screen.screenID)
             } else if point.x >= frame.maxX - hitZone && point.y >= frame.maxY - hitZone {
@@ -161,6 +162,16 @@ class CornerDetectionEngine: ObservableObject {
                 return (.bottomLeft, screen.screenID)
             } else if point.x >= frame.maxX - hitZone && point.y <= frame.minY + hitZone {
                 return (.bottomRight, screen.screenID)
+            }
+            // Edges: middle strip of each side, excluding the corner squares.
+            let midX = point.x > frame.minX + hitZone && point.x < frame.maxX - hitZone
+            let midY = point.y > frame.minY + hitZone && point.y < frame.maxY - hitZone
+            if midX && point.y >= frame.maxY - hitZone {
+                return (.topEdge, screen.screenID)
+            } else if midY && point.x <= frame.minX + hitZone {
+                return (.leftEdge, screen.screenID)
+            } else if midY && point.x >= frame.maxX - hitZone {
+                return (.rightEdge, screen.screenID)
             }
         }
         return nil

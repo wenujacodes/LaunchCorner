@@ -37,15 +37,18 @@ class PermissionManager: ObservableObject {
         isForceReset = true
         isAccessibilityGranted = false
         stopMonitoringPermission()
-        
-        // Reset macOS TCC Accessibility permissions for LaunchCorner
+
+        // Reset macOS TCC Accessibility permissions for LaunchCorner.
+        // tccutil forks block for seconds: never on the main thread.
         let bundleIDs = Array(Set([Bundle.main.bundleIdentifier ?? "com.launchcorner.app", "com.launchcorner.app", "com.nook.hotcorner"]))
-        for id in bundleIDs {
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
-            task.arguments = ["reset", "Accessibility", id]
-            try? task.run()
-            task.waitUntilExit()
+        DispatchQueue.global(qos: .utility).async {
+            for id in bundleIDs {
+                let task = Process()
+                task.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+                task.arguments = ["reset", "Accessibility", id]
+                try? task.run()
+                task.waitUntilExit()
+            }
         }
     }
     
