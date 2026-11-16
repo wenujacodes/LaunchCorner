@@ -7,5 +7,20 @@
         <link>https://raw.githubusercontent.com/wenujacodes/LaunchCorner/main/appcast-v2.xml</link>
         <description>Most recent updates for LaunchCorner</description>
         <language>en</language>
+        <item>
+            <title>Version 2.0.0</title>
+            <sparkle:releaseNotesLink>
+                https://github.com/wenujacodes/LaunchCorner/releases/tag/v2.0.0
+            </sparkle:releaseNotesLink>
+            <pubDate>Mon, 16 Nov 2026 15:47:00 +0000</pubDate>
+            <enclosure
+                url="https://github.com/wenujacodes/LaunchCorner/releases/download/v2.0.0/LaunchCorner.dmg"
+                sparkle:version="5"
+                sparkle:shortVersionString="2.0.0"
+                sparkle:edSignature="mftCd2+p9zNDep3EtUIzuGEXxuQoaTJGxzKQrrCj5o0IRsNXznvmKOmJeze/T4KoSb1u2F3r0MX2l+vnQefsAQ=="
+                length="1996015"
+                sparkle:minimumSystemVersion="14.0"
+                type="application/octet-stream" />
+        </item>
     </channel>
 </rss>
